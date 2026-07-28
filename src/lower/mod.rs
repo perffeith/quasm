@@ -106,7 +106,11 @@ impl Lower {
             tast::ExprKind::VarRef(id) => ir::ExprKind::LocalGet(*id),
             tast::ExprKind::FuncRef(id) => ir::ExprKind::FuncRef(*id),
             tast::ExprKind::Block(block) => return self.lower_block(block),
-            tast::ExprKind::BinaryOp(_) => todo!("binary ir"),
+            tast::ExprKind::BinaryOp(binop) => {
+                let left = self.lower_expr(&binop.left);
+                let right = self.lower_expr(&binop.right);
+                ir::ExprKind::Binary { op: binop.op, left: Box::new(left), right: Box::new(right) }
+            }
             tast::ExprKind::UnaryOp(_) => todo!("unary ir"),
             tast::ExprKind::Call(call) => {
                 let args = call.args.iter().map(|arg| self.lower_expr(arg)).collect();
