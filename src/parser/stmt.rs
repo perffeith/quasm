@@ -10,7 +10,16 @@ impl Parser {
             TokenKind::Struct => Ok(Stmt::Struct(self.parse_struct_decl()?)),
             TokenKind::Let => Ok(Stmt::Let(self.parse_let_stmt()?)),
             TokenKind::Type => Ok(Stmt::Type(self.parse_type_decl()?)),
-            _ => Ok(Stmt::Expr(self.parse_expr()?)),
+            _ => {
+                let expr = self.parse_expr()?;
+                if self.peek_is(TokenKind::Eq) {
+                    self.advance();
+                    let value = self.parse_expr()?;
+                    Ok(Stmt::Assign(Assign { target: expr, value }))
+                } else {
+                    Ok(Stmt::Expr(expr))
+                }
+            }
         }
     }
 

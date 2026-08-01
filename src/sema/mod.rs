@@ -101,6 +101,9 @@ impl Sema {
                 ast::Stmt::Let(s) => {
                     return Err(self.err("top level should not contain let statement", s.name.span));
                 }
+                ast::Stmt::Assign(s) => {
+                    return Err(self.err("top level should not contain assignment", s.target.span));
+                }
                 ast::Stmt::Type(s) => {
                     return Err(self.err("not implemented yet", s.name.span));
                 }
@@ -153,6 +156,7 @@ impl Sema {
             ast::Stmt::Func(func) => Ok(tast::Stmt::Func(self.check_func_decl(func)?)),
             ast::Stmt::Struct(struc) => Ok(tast::Stmt::Struct(self.check_struct_decl(struc)?)),
             ast::Stmt::Let(let_stmt) => Ok(tast::Stmt::Let(self.check_let(let_stmt)?)),
+            ast::Stmt::Assign(assign) => Ok(tast::Stmt::Assign(self.check_assign(assign)?)),
             ast::Stmt::Type(type_stmt) => {
                 Err(self.err("not implemented yet", type_stmt.name.span))
             }
@@ -179,7 +183,7 @@ impl Sema {
         self.sym_table.enter_func();
         let mut params = Vec::new();
         for (param, ty) in func.params.iter().zip(params_ty) {
-            let id = self.sym_table.define_var(&param.name.value, ty.clone())
+            let id = self.sym_table.define_var(&param.name.value, false, ty.clone())
                 .map_err(|msg| self.err(msg, param.name.span))?;
             params.push(tast::Param { id, ty });
         }
@@ -223,10 +227,40 @@ impl Sema {
             None => value.ty.clone()
         };
 
-        let id = self.sym_table.define_var(&let_stmt.name.value, value_ty.clone())
+        let id = self.sym_table.define_var(&let_stmt.name.value, let_stmt.is_mut, value_ty.clone())
             .map_err(|msg| self.err(msg, let_stmt.name.span))?;
 
         Ok(tast::Let { id, is_mut: let_stmt.is_mut, value, value_ty, ty: Ty::Nil })
+    }
+
+    fn check_assign(&mut self, assign: ast::Assign) -> Result<tast::Assign, SemaError> {
+        let ast::ExprKind::Identifier(target) = assign.target.kind else {
+            return Err(self.err("invalid assignment target", assign.target.span));
+        };
+
+        let Some(var_symbol) = self.sym_table.lookup_var(&target.value) else {
+            return Err(self.err(
+                format!("cannot find `{}` in this scope", target.value),
+                target.span
+            ));
+        };
+        let id = var_symbol.id;
+        let is_mut = var_symbol.is_mut;
+        let target_ty = var_symbol.ty.clone();
+
+        if !is_mut {
+            return Err(self.err(
+                format!("cannot assign to immutable variable `{}`", target.value),
+                target.span
+            ));
+        }
+
+        let value = self.check_expr(assign.value)?;
+        self.expect_eq(&target_ty, &value.ty, target.span, || {
+            format!("type mismatch for `{}`", target.value)
+        })?;
+
+        Ok(tast::Assign { id, value, ty: Ty::Nil })
     }
 
     fn check_expr(&mut self, expr: ast::Expr) -> Result<tast::Expr, SemaError> {

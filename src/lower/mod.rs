@@ -77,6 +77,13 @@ impl Lower {
     fn lower_stmt(&mut self, stmt: &tast::Stmt) -> ir::Expr {
         match stmt {
             tast::Stmt::Let(let_stmt) => self.lower_local_decl(let_stmt.id, &let_stmt.value_ty, &let_stmt.value),
+            tast::Stmt::Assign(assign) => {
+                let value = self.lower_expr(&assign.value);
+                ir::Expr {
+                    kind: ir::ExprKind::LocalSet { id: assign.id, value: Box::new(value) },
+                    ty: IrTy::Unit
+                }
+            }
             tast::Stmt::Expr(expr) => self.lower_expr(expr),
             tast::Stmt::Func(_) => unreachable!("nested functions"),
             tast::Stmt::Struct(_) => unreachable!("nested structs")

@@ -18,6 +18,7 @@ pub enum Stmt {
     Func(Func),
     Struct(Struct),
     Let(Let),
+    Assign(Assign),
     Expr(Expr)
 }
 
@@ -61,6 +62,13 @@ pub struct Let {
     pub is_mut: bool,
     pub value: Expr,
     pub value_ty: Ty,
+    pub ty: Ty
+}
+
+#[derive(Debug)]
+pub struct Assign {
+    pub id: VarId,
+    pub value: Expr,
     pub ty: Ty
 }
 
