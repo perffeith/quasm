@@ -101,9 +101,6 @@ impl Sema {
                 ast::Stmt::Let(s) => {
                     return Err(self.err("top level should not contain let statement", s.name.span));
                 }
-                ast::Stmt::Var(s) => {
-                    return Err(self.err("top level should not contain var statement", s.name.span));
-                }
                 ast::Stmt::Type(s) => {
                     return Err(self.err("not implemented yet", s.name.span));
                 }
@@ -156,7 +153,6 @@ impl Sema {
             ast::Stmt::Func(func) => Ok(tast::Stmt::Func(self.check_func_decl(func)?)),
             ast::Stmt::Struct(struc) => Ok(tast::Stmt::Struct(self.check_struct_decl(struc)?)),
             ast::Stmt::Let(let_stmt) => Ok(tast::Stmt::Let(self.check_let(let_stmt)?)),
-            ast::Stmt::Var(var_stmt) => Ok(tast::Stmt::Var(self.check_var(var_stmt)?)),
             ast::Stmt::Type(type_stmt) => {
                 Err(self.err("not implemented yet", type_stmt.name.span))
             }
@@ -230,27 +226,7 @@ impl Sema {
         let id = self.sym_table.define_var(&let_stmt.name.value, value_ty.clone())
             .map_err(|msg| self.err(msg, let_stmt.name.span))?;
 
-        Ok(tast::Let { id, value, value_ty, ty: Ty::Nil })
-    }
-
-    fn check_var(&mut self, var_stmt: ast::Var) -> Result<tast::Var, SemaError> {
-        let value = self.check_expr(var_stmt.value)?;
-
-        let value_ty = match &var_stmt.annot_ty {
-            Some(annot) => {
-                let annot_ty = self.resolve_ty(annot)?;
-                self.expect_eq(&annot_ty, &value.ty, var_stmt.name.span, || {
-                    format!("type mismatch for `{}`", var_stmt.name.value)
-                })?;
-                annot_ty
-            }
-            None => value.ty.clone()
-        };
-
-        let id = self.sym_table.define_var(&var_stmt.name.value, value_ty.clone())
-            .map_err(|msg| self.err(msg, var_stmt.name.span))?;
-
-        Ok(tast::Var { id, value, value_ty, ty: Ty::Nil })
+        Ok(tast::Let { id, is_mut: let_stmt.is_mut, value, value_ty, ty: Ty::Nil })
     }
 
     fn check_expr(&mut self, expr: ast::Expr) -> Result<tast::Expr, SemaError> {

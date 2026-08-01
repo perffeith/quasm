@@ -9,7 +9,6 @@ impl Parser {
             TokenKind::Func => Ok(Stmt::Func(self.parse_func_decl()?)),
             TokenKind::Struct => Ok(Stmt::Struct(self.parse_struct_decl()?)),
             TokenKind::Let => Ok(Stmt::Let(self.parse_let_stmt()?)),
-            TokenKind::Var => Ok(Stmt::Var(self.parse_var_stmt()?)),
             TokenKind::Type => Ok(Stmt::Type(self.parse_type_decl()?)),
             _ => Ok(Stmt::Expr(self.parse_expr()?)),
         }
@@ -41,20 +40,15 @@ impl Parser {
 
     fn parse_let_stmt(&mut self) -> Result<Let, ParseError> {
         self.consume(TokenKind::Let)?;
+        let is_mut = self.peek_is(TokenKind::Mut);
+        if is_mut {
+            self.advance();
+        }
         let name = self.parse_identifier()?;
         let annot_ty = self.parse_type_annotation()?;
         self.consume(TokenKind::Eq)?;
         let value = self.parse_expr()?;
-        Ok(Let { name, annot_ty, value })
-    }
-
-    fn parse_var_stmt(&mut self) -> Result<Var, ParseError> {
-        self.consume(TokenKind::Var)?;
-        let name = self.parse_identifier()?;
-        let annot_ty = self.parse_type_annotation()?;
-        self.consume(TokenKind::Eq)?;
-        let value = self.parse_expr()?;
-        Ok(Var { name, annot_ty, value })
+        Ok(Let { name, is_mut, annot_ty, value })
     }
 
     fn parse_type_decl(&mut self) -> Result<Type, ParseError> {

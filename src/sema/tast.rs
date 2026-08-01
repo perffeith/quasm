@@ -18,7 +18,6 @@ pub enum Stmt {
     Func(Func),
     Struct(Struct),
     Let(Let),
-    Var(Var),
     Expr(Expr)
 }
 
@@ -59,14 +58,7 @@ pub struct StructLit {
 #[derive(Debug)]
 pub struct Let {
     pub id: VarId,
-    pub value: Expr,
-    pub value_ty: Ty,
-    pub ty: Ty
-}
-
-#[derive(Debug)]
-pub struct Var {
-    pub id: VarId,
+    pub is_mut: bool,
     pub value: Expr,
     pub value_ty: Ty,
     pub ty: Ty
