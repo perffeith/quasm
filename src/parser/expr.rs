@@ -204,6 +204,9 @@ impl Parser {
             TokenKind::False => {
                 Ok(self.literal_expr(Literal::Bool(false)))
             }
+            TokenKind::Nil => {
+                Ok(self.literal_expr(Literal::Nil))
+            }
             TokenKind::LParen => {
                 self.advance();
                 self.skip_newlines();
@@ -349,6 +352,9 @@ impl Parser {
             }
             TokenKind::False => {
                 Ok(self.literal_pattern(Literal::Bool(false)))
+            }
+            TokenKind::Nil => {
+                Ok(self.literal_pattern(Literal::Nil))
             }
             TokenKind::Minus => {
                 let start = self.cur_span().start;

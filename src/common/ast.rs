@@ -40,5 +40,6 @@ pub enum UnaryOpKind {
 pub enum Literal {
     Int(i64),
     Float(f64),
-    Bool(bool)
+    Bool(bool),
+    Nil
 }

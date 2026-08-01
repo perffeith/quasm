@@ -56,6 +56,11 @@ impl Parser {
                 };
                 Ok(Ty::Named { name, args })
             }
+            TokenKind::Nil => {
+                let name = Identifier { value: "Nil".to_string(), span: self.cur_span() };
+                self.advance();
+                Ok(Ty::Named { name, args: Vec::new() })
+            }
             other => Err(self.err(format!("expected type, got {:?}", other)))
         }
     }

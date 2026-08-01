@@ -25,7 +25,7 @@ impl Lower {
             Ty::Int => IrTy::I64,
             Ty::Float => IrTy::F64,
             Ty::Bool => IrTy::I32,
-            Ty::Unit => IrTy::Unit,
+            Ty::Nil => IrTy::Unit,
             Ty::Struct(_) => todo!("struct types"),
             Ty::Array(_) => todo!("array types"),
             Ty::Func { .. } => todo!("function types"),
@@ -101,7 +101,8 @@ impl Lower {
             tast::ExprKind::Literal(lit) => match lit {
                 Literal::Int(v) => ir::ExprKind::ConstInt(*v),
                 Literal::Float(v) => ir::ExprKind::ConstFloat(*v),
-                Literal::Bool(v) => ir::ExprKind::ConstBool(*v)
+                Literal::Bool(v) => ir::ExprKind::ConstBool(*v),
+                Literal::Nil => ir::ExprKind::Unit
             },
             tast::ExprKind::VarRef(id) => ir::ExprKind::LocalGet(*id),
             tast::ExprKind::FuncRef(id) => ir::ExprKind::FuncRef(*id),

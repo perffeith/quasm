@@ -7,7 +7,7 @@ pub enum Ty {
     Int,
     Float,
     Bool,
-    Unit,
+    Nil,
     Array(Box<Ty>),
     Func { params: Vec<Ty>, ret: Box<Ty> },
     Struct(StructId),

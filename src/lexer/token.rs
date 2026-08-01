@@ -20,6 +20,7 @@ pub enum TokenKind {
     #[token("return")] Return,
     #[token("true")] True,
     #[token("false")] False,
+    #[token("Nil")] Nil,
 
     #[regex(r"[0-9]+\.[0-9]+", |lex| lex.slice().parse::<f64>().ok())]
     Float(f64),
