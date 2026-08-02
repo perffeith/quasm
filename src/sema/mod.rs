@@ -47,11 +47,7 @@ impl Sema {
 
     fn resolve_ty(&self, ty: &ast::Ty) -> Result<Ty, SemaError> {
         match ty {
-            ast::Ty::Named { name, args } => {
-                if !args.is_empty() {
-                    return Err(self.err("generic types are not supported yet", name.span));
-                }
-
+            ast::Ty::Named { name } => {
                 match name.value.as_str() {
                     "Int" => Ok(Ty::Int),
                     "Float" => Ok(Ty::Float),
@@ -91,9 +87,6 @@ impl Sema {
             match stmt {
                 ast::Stmt::Func(_) => {}
                 ast::Stmt::Struct(struc) => {
-                    if !struc.ty_params.is_empty() {
-                        return Err(self.err("generic structs are not supported yet", struc.name.span));
-                    }
                     self.sym_table.define_struct(&struc.name.value)
                         .map_err(|msg| self.err(msg, struc.name.span))?;
                 }

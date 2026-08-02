@@ -63,9 +63,8 @@ impl Parser {
     fn parse_type_decl(&mut self) -> Result<Type, ParseError> {
         self.consume(TokenKind::Type)?;
         let name = self.parse_identifier()?;
-        let ty_params = self.parse_ty_params()?;
         let variants = self.parse_braced_list("variant", |p| p.parse_type_variant())?;
-        Ok(Type { name, ty_params, variants })
+        Ok(Type { name, variants })
     }
 
     fn parse_type_variant(&mut self) -> Result<TypeVariant, ParseError> {
@@ -83,9 +82,8 @@ impl Parser {
     fn parse_struct_decl(&mut self) -> Result<Struct, ParseError> {
         self.consume(TokenKind::Struct)?;
         let name = self.parse_identifier()?;
-        let ty_params = self.parse_ty_params()?;
         let fields = self.parse_braced_list("field", |p| p.parse_struct_field())?;
-        Ok(Struct { name, ty_params, fields })
+        Ok(Struct { name, fields })
     }
 
     fn parse_struct_field(&mut self) -> Result<StructField, ParseError> {

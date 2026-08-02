@@ -12,18 +12,6 @@ impl Parser {
         Ok(Some(self.parse_type()?))
     }
 
-    // type parameter list of type/struct declaration
-    pub(super) fn parse_ty_params(&mut self) -> Result<Vec<Identifier>, ParseError> {
-        if !self.peek_is(TokenKind::LParen) {
-            return Ok(Vec::new());
-        }
-        let params = self.parse_comma_list(TokenKind::LParen, TokenKind::RParen, "type parameter", |p| p.parse_identifier())?;
-        if params.is_empty() {
-            return Err(self.err("type parameter list cannot be empty"));
-        }
-        Ok(params)
-    }
-
     pub(super) fn parse_type(&mut self) -> Result<Ty, ParseError> {
         match self.peek() {
             TokenKind::LBracket => {
@@ -45,16 +33,7 @@ impl Parser {
             }
             TokenKind::Identifier(_) => {
                 let name = self.parse_identifier()?;
-                let args = if self.peek_is(TokenKind::LParen) {
-                    let args = self.parse_comma_list(TokenKind::LParen, TokenKind::RParen, "type argument", |p| p.parse_type())?;
-                    if args.is_empty() {
-                        return Err(self.err("type argument list cannot be empty"));
-                    }
-                    args
-                } else {
-                    Vec::new()
-                };
-                Ok(Ty::Named { name, args })
+                Ok(Ty::Named { name })
             }
             other => Err(self.err(format!("expected type, got {:?}", other)))
         }
