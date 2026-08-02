@@ -11,8 +11,11 @@ pub struct Codegen {
     func_sig_cache: HashMap<(Vec<ValType>, Vec<ValType>), u32>
 }
 
-pub fn generate(module: ir::Module) {
+pub fn emit(module: ir::Module) -> Vec<u8> {
     Codegen::new();
+    
+    // placeholder
+    vec![0]
 }
 
 impl Codegen {

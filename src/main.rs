@@ -61,5 +61,5 @@ fn main() {
     let ir = lower::lower(tast);
     if args.debug { write_debug("ir.txt", &format!("{:#?}", ir)); }
 
-    let _wasm = codegen::generate(ir);
+    let _wasm = codegen::emit(ir);
 }
