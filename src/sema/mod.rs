@@ -4,7 +4,7 @@ pub mod symbols;
 
 use ty::Ty;
 use crate::parser::ast;
-use crate::common::ast::Literal;
+use crate::common::Literal;
 use crate::common::span::Span;
 use symbols::SymbolTable;
 
@@ -222,12 +222,12 @@ impl Sema {
         let value_ty = match &let_stmt.annot_ty {
             Some(annot) => {
                 let annot_ty = self.resolve_ty(annot)?;
-                self.expect_eq(&annot_ty, &value.ty, let_stmt.name.span, || {
+                self.expect_eq(&annot_ty, value.ty(), let_stmt.name.span, || {
                     format!("type mismatch for `{}`", let_stmt.name.value)
                 })?;
                 annot_ty
             }
-            None => value.ty.clone()
+            None => value.ty().clone()
         };
 
         let id = self.sym_table.define_var(&let_stmt.name.value, let_stmt.is_mut, value_ty.clone())
@@ -264,7 +264,7 @@ impl Sema {
         }
 
         let value = self.check_expr(assign.value)?;
-        self.expect_eq(&target_ty, &value.ty, target.span, || {
+        self.expect_eq(&target_ty, value.ty(), target.span, || {
             format!("type mismatch for `{}`", target.value)
         })?;
 
@@ -272,6 +272,7 @@ impl Sema {
     }
 
     fn check_expr(&mut self, expr: ast::Expr) -> Result<tast::Expr, SemaError> {
+        let span = expr.span();
         match expr {
             ast::Expr::Literal(lit, _) => {
                 let ty = match lit {
@@ -279,12 +280,10 @@ impl Sema {
                     Literal::Float(_) => Ty::Float,
                     Literal::Bool(_) => Ty::Bool
                 };
-                Ok(tast::Expr { kind: tast::ExprKind::Literal(lit), ty })
+                Ok(tast::Expr::Literal(lit, ty))
             }
             ast::Expr::Block(block) => {
-                let block = self.check_block(block)?;
-                let ty = block.ty.clone();
-                Ok(tast::Expr { kind: tast::ExprKind::Block(block), ty })
+                Ok(tast::Expr::Block(self.check_block(block)?))
             }
             ast::Expr::Identifier(identifier) => {
                 let Some(var_symbol) = self.sym_table.lookup_var(&identifier.value) else {
@@ -293,15 +292,13 @@ impl Sema {
                         identifier.span
                     ));
                 };
-                Ok(tast::Expr { kind: tast::ExprKind::VarRef(var_symbol.id), ty: var_symbol.ty.clone() })
+                Ok(tast::Expr::VarRef(var_symbol.id, var_symbol.ty.clone()))
             }
             ast::Expr::BinaryOp(binaryop) => {
-                let binaryop = self.check_binaryop(binaryop)?;
-                let ty = binaryop.ty.clone();
-                Ok(tast::Expr { kind: tast::ExprKind::BinaryOp(binaryop), ty })
+                Ok(tast::Expr::BinaryOp(self.check_binaryop(binaryop)?))
             }
             ast::Expr::Call(call) => self.check_call(call),
-            _ => Ok(tast::Expr { kind: tast::ExprKind::Error, ty: Ty::Unit })
+            _ => Err(self.err("unsupported expression", span))
         }
     }
 
@@ -315,7 +312,7 @@ impl Sema {
 
         // a block evaluates to its trailing expression, otherwise to unit
         let ty = match stmts.last() {
-            Some(tast::Stmt::Expr(expr)) => expr.ty.clone(),
+            Some(tast::Stmt::Expr(expr)) => expr.ty().clone(),
             _ => Ty::Unit
         };
 
@@ -327,9 +324,9 @@ impl Sema {
         let left = self.check_expr(*binaryop.left)?;
         let right = self.check_expr(*binaryop.right)?;
 
-        let Some(ty) = ty::bin_op_ty(binaryop.op, &left.ty, &right.ty) else {
+        let Some(ty) = ty::bin_op_ty(binaryop.op, left.ty(), right.ty()) else {
             return Err(self.err(
-                format!("invalid binary operation: `{:?}` {} `{:?}`", left.ty, binaryop.op, right.ty),
+                format!("invalid binary operation: `{:?}` {} `{:?}`", left.ty(), binaryop.op, right.ty()),
                 span
             ));
         };
@@ -355,7 +352,7 @@ impl Sema {
                 }
 
                 // otherwise it's a function call
-                let first_param_ty = args.first().map(|arg| arg.ty.clone());
+                let first_param_ty = args.first().map(|arg| arg.ty().clone());
 
                 let Some(func_symbol) = self.sym_table.lookup_func(&name, first_param_ty) else {
                     return Err(self.err(
@@ -379,23 +376,20 @@ impl Sema {
                 }
 
                 for (arg, param_ty) in args.iter().zip(&params_ty) {
-                    self.expect_eq(param_ty, &arg.ty, span, || {
+                    self.expect_eq(param_ty, arg.ty(), span, || {
                         format!("type mismatch in call to `{}`", name)
                     })?;
                 }
 
                 // build tast
-                let callee = tast::Expr {
-                    kind: tast::ExprKind::FuncRef(id) ,
-                    ty: Ty::Func { params: params_ty, ret: Box::new(ret_ty.clone()) }
-                };
+                let callee = tast::Expr::FuncRef(
+                    id,
+                    Ty::Func { params: params_ty, ret: Box::new(ret_ty.clone()) }
+                );
 
-                Ok(tast::Expr {
-                    kind: tast::ExprKind::Call(tast::Call {
-                        callee: Box::new(callee), args, ty: ret_ty.clone()
-                    }),
-                    ty: ret_ty
-                })
+                Ok(tast::Expr::Call(tast::Call {
+                    callee: Box::new(callee), args, ty: ret_ty
+                }))
             },
             _ => {
                 Err(self.err("only call on identifier is supported", span))
@@ -420,14 +414,11 @@ impl Sema {
         }
 
         for (arg, field_ty) in args.iter().zip(&field_tys) {
-            self.expect_eq(field_ty, &arg.ty, span, || {
+            self.expect_eq(field_ty, arg.ty(), span, || {
                 format!("type mismatch in struct literal `{}`", name)
             })?;
         }
 
-        Ok(tast::Expr {
-            kind: tast::ExprKind::StructLit(tast::StructLit { id, fields: args, ty: Ty::Struct(id) }),
-            ty: Ty::Struct(id)
-        })
+        Ok(tast::Expr::StructLit(tast::StructLit { id, fields: args, ty: Ty::Struct(id) }))
     }
 }

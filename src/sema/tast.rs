@@ -1,4 +1,5 @@
-use crate::common::ast::{Literal, BinOpKind, UnaryOpKind};
+use crate::common::Literal;
+use crate::common::op::{BinOpKind, UnaryOpKind};
 use crate::sema::ty::Ty;
 
 pub type VarId = u64;
@@ -28,12 +29,6 @@ pub struct Func {
     pub params: Vec<Param>,
     pub ret_ty: Ty,
     pub body: Block
-}
-
-#[derive(Debug)]
-pub struct Return {
-    pub value: Option<Expr>,
-    pub ty: Ty
 }
 
 #[derive(Debug)]
@@ -72,6 +67,12 @@ pub struct Let {
 }
 
 #[derive(Debug)]
+pub struct Return {
+    pub value: Option<Expr>,
+    pub ty: Ty
+}
+
+#[derive(Debug)]
 pub struct Assign {
     pub id: VarId,
     pub value: Expr,
@@ -79,23 +80,30 @@ pub struct Assign {
 }
 
 #[derive(Debug)]
-pub struct Expr {
-    pub kind: ExprKind,
-    pub ty: Ty
-}
-
-#[derive(Debug)]
-pub enum ExprKind {
-    Literal(Literal),
-    VarRef(VarId),
-    FuncRef(FuncId),
+pub enum Expr {
+    Literal(Literal, Ty),
+    VarRef(VarId, Ty),
+    FuncRef(FuncId, Ty),
     Block(Block),
     BinaryOp(BinaryOp),
     UnaryOp(UnaryOp),
     Call(Call),
-    StructLit(StructLit),
-    // stands in for an expression that failed to check or isn't supported yet
-    Error
+    StructLit(StructLit)
+}
+
+impl Expr {
+    pub fn ty(&self) -> &Ty {
+        match self {
+            Expr::Literal(_, ty) => ty,
+            Expr::VarRef(_, ty) => ty,
+            Expr::FuncRef(_, ty) => ty,
+            Expr::Block(e) => &e.ty,
+            Expr::BinaryOp(e) => &e.ty,
+            Expr::UnaryOp(e) => &e.ty,
+            Expr::Call(e) => &e.ty,
+            Expr::StructLit(e) => &e.ty
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -115,7 +123,8 @@ pub struct BinaryOp {
 #[derive(Debug)]
 pub struct UnaryOp {
     pub op: UnaryOpKind,
-    pub operand: Box<Expr>
+    pub operand: Box<Expr>,
+    pub ty: Ty
 }
 
 #[derive(Debug)]

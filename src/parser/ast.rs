@@ -1,5 +1,6 @@
 use crate::common::span::Span;
-use crate::common::ast::{Literal, BinOpKind, UnaryOpKind};
+use crate::common::Literal;
+use crate::common::op::{BinOpKind, UnaryOpKind};
 
 #[derive(Debug)]
 pub struct Program {

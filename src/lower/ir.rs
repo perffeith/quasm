@@ -2,7 +2,7 @@
 // todo: decide IR design
 #![allow(unused)]
 
-use crate::common::ast::{BinOpKind, UnaryOpKind};
+use crate::common::op::{BinOpKind, UnaryOpKind};
 
 pub type LocalId = u64;
 pub type FuncId = u64;

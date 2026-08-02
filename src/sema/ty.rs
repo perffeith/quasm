@@ -1,4 +1,4 @@
-use crate::common::ast::BinOpKind;
+use crate::common::op::BinOpKind;
 use crate::sema::tast::StructId;
 
 #[allow(unused)]

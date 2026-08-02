@@ -1,6 +1,6 @@
 pub mod ir;
 
-use crate::common::ast::Literal;
+use crate::common::Literal;
 use crate::sema::tast;
 use crate::sema::ty::Ty;
 use ir::{IrTy};
@@ -102,32 +102,31 @@ impl Lower {
     }
 
     fn lower_expr(&mut self, expr: &tast::Expr) -> ir::Expr {
-        let ty = self.lower_ty(&expr.ty);
+        let ty = self.lower_ty(expr.ty());
 
-        let kind = match &expr.kind {
-            tast::ExprKind::Literal(lit) => match lit {
+        let kind = match expr {
+            tast::Expr::Literal(lit, _) => match lit {
                 Literal::Int(v) => ir::ExprKind::ConstInt(*v),
                 Literal::Float(v) => ir::ExprKind::ConstFloat(*v),
                 Literal::Bool(v) => ir::ExprKind::ConstBool(*v)
             },
-            tast::ExprKind::VarRef(id) => ir::ExprKind::LocalGet(*id),
-            tast::ExprKind::FuncRef(id) => ir::ExprKind::FuncRef(*id),
-            tast::ExprKind::Block(block) => return self.lower_block(block),
-            tast::ExprKind::BinaryOp(binop) => {
+            tast::Expr::VarRef(id, _) => ir::ExprKind::LocalGet(*id),
+            tast::Expr::FuncRef(id, _) => ir::ExprKind::FuncRef(*id),
+            tast::Expr::Block(block) => return self.lower_block(block),
+            tast::Expr::BinaryOp(binop) => {
                 let left = self.lower_expr(&binop.left);
                 let right = self.lower_expr(&binop.right);
                 ir::ExprKind::Binary { op: binop.op, left: Box::new(left), right: Box::new(right) }
             }
-            tast::ExprKind::UnaryOp(_) => todo!("unary ir"),
-            tast::ExprKind::Call(call) => {
+            tast::Expr::UnaryOp(_) => todo!("unary ir"),
+            tast::Expr::Call(call) => {
                 let args = call.args.iter().map(|arg| self.lower_expr(arg)).collect();
-                match &call.callee.kind {
-                    tast::ExprKind::FuncRef(id) => ir::ExprKind::Call(ir::Call { func: *id, args }),
+                match call.callee.as_ref() {
+                    tast::Expr::FuncRef(id, _) => ir::ExprKind::Call(ir::Call { func: *id, args }),
                     _ => todo!("other kind of calls?? bug or todo not sure tbh; gotta figure it out later")
                 }
             }
-            tast::ExprKind::StructLit(_) => todo!("struct literals"),
-            tast::ExprKind::Error => unreachable!("bug: Error expr reached lower")
+            tast::Expr::StructLit(_) => todo!("struct literals")
         };
 
         ir::Expr { kind, ty }
