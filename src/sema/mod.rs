@@ -239,7 +239,7 @@ impl Sema {
         Ok(tast::Let { id, is_mut: let_stmt.is_mut, value, value_ty, ty: Ty::Unit })
     }
 
-    fn check_return(&mut self, ret: ast::Return) -> Result<tast::Return, SemaError> {
+    fn check_return(&mut self, _ret: ast::Return) -> Result<tast::Return, SemaError> {
         todo!("check return")
     }
 

@@ -3,10 +3,10 @@ use crate::common::op::{BinOpKind, UnaryOpKind};
 use crate::sema::ty::Ty;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct VarId(pub u64);
+pub struct FuncId(pub u64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct FuncId(pub u64);
+pub struct VarId(pub u64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct StructId(pub u64);
@@ -89,8 +89,8 @@ pub struct Assign {
 #[derive(Debug)]
 pub enum Expr {
     Literal(Literal, Ty),
-    VarRef(VarRef),
     FuncRef(FuncRef),
+    VarRef(VarRef),
     Block(Block),
     BinaryOp(BinaryOp),
     UnaryOp(UnaryOp),
@@ -102,8 +102,8 @@ impl Expr {
     pub fn ty(&self) -> &Ty {
         match self {
             Expr::Literal(_, ty) => ty,
-            Expr::VarRef(e) => &e.ty,
             Expr::FuncRef(e) => &e.ty,
+            Expr::VarRef(e) => &e.ty,
             Expr::Block(e) => &e.ty,
             Expr::BinaryOp(e) => &e.ty,
             Expr::UnaryOp(e) => &e.ty,
@@ -114,16 +114,17 @@ impl Expr {
 }
 
 #[derive(Debug)]
+pub struct FuncRef {
+    pub id: FuncId,
+    pub ty: Ty
+}
+
+#[derive(Debug)]
 pub struct VarRef {
     pub id: VarId,
     pub ty: Ty
 }
 
-#[derive(Debug)]
-pub struct FuncRef {
-    pub id: FuncId,
-    pub ty: Ty
-}
 
 #[derive(Debug)]
 pub struct Block {
