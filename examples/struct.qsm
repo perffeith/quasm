@@ -9,7 +9,7 @@ struct Rect {
     height: Float
 }
 
-func new(x: Float, y: Float, width: Float, height: Float) -> Rect {
+func new(x: Float, y: Float, width: Float, height: Float): Rect {
     Rect(
         Point(x, y),
         width,
@@ -17,15 +17,15 @@ func new(x: Float, y: Float, width: Float, height: Float) -> Rect {
     )
 }
 
-func area(r: Rect) -> Float {
+func area(r: Rect): Float {
     r.width * r.height
 }
 
-func perimeter(r: Rect) -> Float {
+func perimeter(r: Rect): Float {
     2.0 * (r.width + r.height)
 }
 
-func contains(r: Rect, p: Point) -> Bool {
+func contains(r: Rect, p: Point): Bool {
     p.x >= r.origin.x && p.x <= r.origin.x + r.width && p.y >= r.origin.y && p.y <= r.origin.y + r.height
 }
 

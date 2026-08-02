@@ -51,7 +51,6 @@ pub enum TokenKind {
     #[token(",")] Comma,
     #[token(":")] Colon,
     #[token(";")] Semicolon,
-    #[token("->")] Arrow,
     #[token("=>")] FatArrow,
     #[token("|")] VerBar,
     #[token("&&")] And,

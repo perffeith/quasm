@@ -31,12 +31,7 @@ impl Parser {
         self.consume(TokenKind::Func)?;
         let name = self.parse_identifier()?;
         let params = self.parse_func_params()?;
-        let ret = if self.peek_is(TokenKind::Arrow) {
-            self.advance();
-            Some(self.parse_type()?)
-        } else {
-            None
-        };
+        let ret = self.parse_type_annotation()?;
         let body = self.parse_block()?;
         Ok(Func { name, params, ret, body, span: self.span_from(start) })
     }

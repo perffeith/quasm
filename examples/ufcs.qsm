@@ -6,40 +6,28 @@ struct Point {
     y: Float
 }
 
-type Maybe(a) {
-    Just(a)
-    None
-}
-
 struct Counter {
     count: Int
-    step: func(Int) -> Int
+    step: |func(Int): Int|
 }
 
-func new(x: Float, y: Float) -> Point {
+func new(x: Float, y: Float): Point {
     Point(x, y)
 }
 
-func origin() -> Point {
+func origin(): Point {
     Point(0.0, 0.0)
 }
 
-func scale(p: Point, factor: Float) -> Point {
+func scale(p: Point, factor: Float): Point {
     Point(p.x * factor, p.y * factor)
 }
 
-func dot(a: Point, b: Point) -> Float {
+func dot(a: Point, b: Point): Float {
     a.x * b.x + a.y * b.y
 }
 
-func unwrap_or(m: Maybe(Int), default: Int) -> Int {
-    match m {
-        Just(value) => value
-        None => default
-    }
-}
-
-func double(n: Int) -> Int {
+func double(n: Int): Int {
     n * 2
 }
 
@@ -55,9 +43,6 @@ func main() {
     let d = p.dot(o)
 
     let chained = p.scale(2.0).dot(o)
-
-    let m = Just(5)
-    let value = m.unwrap_or(0)
 
     let four = 2.double()
 

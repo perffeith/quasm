@@ -2,6 +2,6 @@ func main() {
     let result = add(12, 28)
 }
 
-func add(a: Int, b: Int) -> Int {
+func add(a: Int, b: Int): Int {
     a + b
 }

@@ -20,15 +20,17 @@ impl Parser {
                 self.consume(TokenKind::RBracket)?;
                 Ok(Ty::Array(Box::new(inner)))
             }
-            TokenKind::Func => {
+            TokenKind::VerBar => {
                 self.advance();
+                self.consume(TokenKind::Func)?;
                 let params = self.parse_comma_list(TokenKind::LParen, TokenKind::RParen, "parameter type", |p| p.parse_type())?;
-                let ret = if self.peek_is(TokenKind::Arrow) {
+                let ret = if self.peek_is(TokenKind::Colon) {
                     self.advance();
                     Some(Box::new(self.parse_type()?))
                 } else {
                     None
                 };
+                self.consume(TokenKind::VerBar)?;
                 Ok(Ty::Func { params, ret })
             }
             TokenKind::Identifier(_) => {

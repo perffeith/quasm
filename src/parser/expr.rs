@@ -241,12 +241,7 @@ impl Parser {
             self.parse_comma_list(TokenKind::VerBar, TokenKind::VerBar, "parameter", |p| p.parse_param())?
         };
 
-        let ret = if self.peek_is(TokenKind::Arrow) {
-            self.advance();
-            Some(self.parse_type()?)
-        } else {
-            None
-        };
+        let ret = self.parse_type_annotation()?;
 
         self.consume(TokenKind::FatArrow)?;
         let body = self.parse_expr()?;
