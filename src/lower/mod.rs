@@ -47,7 +47,7 @@ impl Lower {
         ir::Module {
             heap_types: vec![],
             funcs,
-            entry: tast.entry.map(|id| id.0)
+            entry: tast.entry.map(|id| ir::FuncId(id.0))
         }
     }
 
@@ -60,13 +60,13 @@ impl Lower {
         self.locals.clear();
 
         let params = func.params.iter()
-            .map(|param| ir::Param { id: param.id.0, ty: self.lower_ty(&param.ty) })
+            .map(|param| ir::Param { id: ir::LocalId(param.id.0), ty: self.lower_ty(&param.ty) })
             .collect();
 
         let body = self.lower_block(&func.body);
 
         ir::Func {
-            id: func.id.0,
+            id: ir::FuncId(func.id.0),
             params,
             locals: std::mem::take(&mut self.locals),
             ret_ty: self.lower_ty(&func.ret_ty),
@@ -80,7 +80,7 @@ impl Lower {
             tast::Stmt::Return(_) => todo!("return"),
             tast::Stmt::Assign(assign) => {
                 let value = self.lower_expr(&assign.value);
-                ir::Expr::LocalSet(ir::LocalSet { id: assign.id.0, value: Box::new(value) })
+                ir::Expr::LocalSet(ir::LocalSet { id: ir::LocalId(assign.id.0), value: Box::new(value) })
             }
             tast::Stmt::Expr(expr) => self.lower_expr(expr),
             tast::Stmt::Func(_) => unreachable!("nested functions"),
@@ -92,7 +92,7 @@ impl Lower {
         self.locals.push(self.lower_ty(value_ty));
 
         let value = self.lower_expr(value);
-        ir::Expr::LocalSet(ir::LocalSet { id: id.0, value: Box::new(value) })
+        ir::Expr::LocalSet(ir::LocalSet { id: ir::LocalId(id.0), value: Box::new(value) })
     }
 
     fn lower_expr(&mut self, expr: &tast::Expr) -> ir::Expr {
@@ -103,9 +103,9 @@ impl Lower {
                 Literal::Bool(v) => ir::Expr::ConstBool(*v)
             },
             tast::Expr::VarRef(var_ref) => {
-                ir::Expr::LocalGet(ir::LocalGet { id: var_ref.id.0, ty: self.lower_ty(&var_ref.ty) })
+                ir::Expr::LocalGet(ir::LocalGet { id: ir::LocalId(var_ref.id.0), ty: self.lower_ty(&var_ref.ty) })
             }
-            tast::Expr::FuncRef(func_ref) => ir::Expr::FuncRef(func_ref.id.0),
+            tast::Expr::FuncRef(func_ref) => ir::Expr::FuncRef(ir::FuncId(func_ref.id.0)),
             tast::Expr::Block(block) => self.lower_block(block),
             tast::Expr::BinaryOp(binop) => {
                 let ty = self.lower_ty(&binop.ty);
@@ -118,7 +118,7 @@ impl Lower {
                 let ty = self.lower_ty(&call.ty);
                 let args = call.args.iter().map(|arg| self.lower_expr(arg)).collect();
                 match call.callee.as_ref() {
-                    tast::Expr::FuncRef(func_ref) => ir::Expr::Call(ir::Call { func: func_ref.id.0, args, ty }),
+                    tast::Expr::FuncRef(func_ref) => ir::Expr::Call(ir::Call { func: ir::FuncId(func_ref.id.0), args, ty }),
                     _ => todo!("other kind of calls?? bug or todo not sure tbh; gotta figure it out later")
                 }
             }
