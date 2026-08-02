@@ -56,7 +56,6 @@ impl Sema {
                     "Int" => Ok(Ty::Int),
                     "Float" => Ok(Ty::Float),
                     "Bool" => Ok(Ty::Bool),
-                    "Nil" => Ok(Ty::Nil),
                     _ => Err(self.err(format!("unknown type `{}`", name.value), name.span))
                 }
             }
@@ -67,7 +66,7 @@ impl Sema {
                 let params = params.iter().map(|p| self.resolve_ty(p)).collect::<Result<_,_>>()?;
                 let ret = match ret {
                     Some(r) => self.resolve_ty(r)?,
-                    None => Ty::Nil
+                    None => Ty::Unit
                 };
                 Ok(Ty::Func { params, ret: Box::new(ret) })
             }
@@ -121,7 +120,7 @@ impl Sema {
                     let params_ty = self.resolve_func_params_ty(func)?;
                     let ret = match &func.ret {
                         Some(ret) => self.resolve_ty(ret)?,
-                        None => Ty::Nil
+                        None => Ty::Unit
                     };
                     self.sym_table.define_func(&name, params_ty, ret)
                         .map_err(|msg| self.err(msg, func.name.span))?;
@@ -210,7 +209,7 @@ impl Sema {
                 ty: ty.clone()
             }).collect();
 
-        Ok(tast::Struct { id, fields, ty: Ty::Nil })
+        Ok(tast::Struct { id, fields, ty: Ty::Unit })
     }
 
     fn check_let(&mut self, let_stmt: ast::Let) -> Result<tast::Let, SemaError> {
@@ -230,7 +229,7 @@ impl Sema {
         let id = self.sym_table.define_var(&let_stmt.name.value, let_stmt.is_mut, value_ty.clone())
             .map_err(|msg| self.err(msg, let_stmt.name.span))?;
 
-        Ok(tast::Let { id, is_mut: let_stmt.is_mut, value, value_ty, ty: Ty::Nil })
+        Ok(tast::Let { id, is_mut: let_stmt.is_mut, value, value_ty, ty: Ty::Unit })
     }
 
     fn check_assign(&mut self, assign: ast::Assign) -> Result<tast::Assign, SemaError> {
@@ -260,7 +259,7 @@ impl Sema {
             format!("type mismatch for `{}`", target.value)
         })?;
 
-        Ok(tast::Assign { id, value, ty: Ty::Nil })
+        Ok(tast::Assign { id, value, ty: Ty::Unit })
     }
 
     fn check_expr(&mut self, expr: ast::Expr) -> Result<tast::Expr, SemaError> {
@@ -269,8 +268,7 @@ impl Sema {
                 let ty = match lit {
                     Literal::Int(_) => Ty::Int,
                     Literal::Float(_) => Ty::Float,
-                    Literal::Bool(_) => Ty::Bool,
-                    Literal::Nil => Ty::Nil
+                    Literal::Bool(_) => Ty::Bool
                 };
                 Ok(tast::Expr { kind: tast::ExprKind::Literal(lit), ty })
             }
@@ -294,7 +292,7 @@ impl Sema {
                 Ok(tast::Expr { kind: tast::ExprKind::BinaryOp(binaryop), ty })
             }
             ast::ExprKind::Call(call) => self.check_call(call),
-            _ => Ok(tast::Expr { kind: tast::ExprKind::Error, ty: Ty::Nil })
+            _ => Ok(tast::Expr { kind: tast::ExprKind::Error, ty: Ty::Unit })
         }
     }
 
@@ -311,7 +309,7 @@ impl Sema {
         // a block evaluates to its trailing expression, otherwise to unit
         let ty = match stmts.last() {
             Some(tast::Stmt::Expr(expr)) => expr.ty.clone(),
-            _ => Ty::Nil
+            _ => Ty::Unit
         };
 
         Ok(tast::Block { stmts, ty, span })
