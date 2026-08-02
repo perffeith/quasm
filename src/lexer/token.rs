@@ -7,7 +7,7 @@ use logos::Logos;
 pub enum TokenKind {
     #[token("func")] Func,
     #[token("struct")] Struct,
-    #[token("type")] Type,
+    #[token("enum")] Enum,
     #[token("let")] Let,
     #[token("mut")] Mut,
     #[token("if")] If,

@@ -11,7 +11,7 @@ pub struct Program {
 pub enum Stmt {
     Func(Func),
     Struct(Struct),
-    Type(Type),
+    Enum(Enum),
     Let(Let),
     Return(Return),
     If(If),
@@ -24,7 +24,7 @@ impl Stmt {
         match self {
             Stmt::Func(s) => s.span,
             Stmt::Struct(s) => s.span,
-            Stmt::Type(s) => s.span,
+            Stmt::Enum(s) => s.span,
             Stmt::Let(s) => s.span,
             Stmt::Return(s) => s.span,
             Stmt::If(s) => s.span,
@@ -65,14 +65,14 @@ pub struct StructField {
 }
 
 #[derive(Debug)]
-pub struct Type {
+pub struct Enum {
     pub name: Identifier,
-    pub variants: Vec<TypeVariant>,
+    pub variants: Vec<EnumVariant>,
     pub span: Span
 }
 
 #[derive(Debug)]
-pub struct TypeVariant {
+pub struct EnumVariant {
     pub name: Identifier,
     pub ty_fields: Vec<Ty>,
     pub span: Span

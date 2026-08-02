@@ -102,7 +102,7 @@ impl Sema {
                 ast::Stmt::If(s) => {
                     return Err(self.err("top level should not contain if statement", s.condition.span()));
                 }
-                ast::Stmt::Type(s) => {
+                ast::Stmt::Enum(s) => {
                     return Err(self.err("not implemented yet", s.name.span));
                 }
                 ast::Stmt::Expr(e) => {
@@ -156,7 +156,7 @@ impl Sema {
             ast::Stmt::Struct(struc) => Ok(tast::Stmt::Struct(self.check_struct_decl(struc)?)),
             ast::Stmt::Let(let_stmt) => Ok(tast::Stmt::Let(self.check_let(let_stmt)?)),
             ast::Stmt::Assign(assign) => Ok(tast::Stmt::Assign(self.check_assign(assign)?)),
-            ast::Stmt::Type(type_stmt) => {
+            ast::Stmt::Enum(type_stmt) => {
                 Err(self.err("not implemented yet", type_stmt.name.span))
             }
             ast::Stmt::If(if_stmt) => {

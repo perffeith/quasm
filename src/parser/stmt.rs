@@ -7,10 +7,10 @@ impl Parser {
     pub(super) fn parse_stmt(&mut self) -> Result<Stmt, ParseError> {
         match self.peek() {
             TokenKind::Func => Ok(Stmt::Func(self.parse_func_decl()?)),
-            TokenKind::Return => Ok(Stmt::Return(self.parse_return()?)),
             TokenKind::Struct => Ok(Stmt::Struct(self.parse_struct_decl()?)),
+            TokenKind::Enum => Ok(Stmt::Enum(self.parse_enum_decl()?)),
             TokenKind::Let => Ok(Stmt::Let(self.parse_let_stmt()?)),
-            TokenKind::Type => Ok(Stmt::Type(self.parse_type_decl()?)),
+            TokenKind::Return => Ok(Stmt::Return(self.parse_return()?)),
             TokenKind::If => Ok(Stmt::If(self.parse_if_stmt()?)),
             _ => {
                 let expr = self.parse_expr()?;
@@ -40,7 +40,7 @@ impl Parser {
         let body = self.parse_block()?;
         Ok(Func { name, params, ret, body, span: self.span_from(start) })
     }
-
+    
     fn parse_func_params(&mut self) -> Result<Vec<Param>, ParseError> {
         self.parse_comma_list(TokenKind::LParen, TokenKind::RParen, "parameter", |p| {
             let param = p.parse_param()?;
@@ -49,6 +49,43 @@ impl Parser {
             }
             Ok(param)
         })
+    }
+
+    fn parse_struct_decl(&mut self) -> Result<Struct, ParseError> {
+        let start = self.cur_span().start;
+        self.consume(TokenKind::Struct)?;
+        let name = self.parse_identifier()?;
+        let fields = self.parse_braced_list("field", |p| p.parse_struct_field())?;
+        Ok(Struct { name, fields, span: self.span_from(start) })
+    }
+
+    fn parse_struct_field(&mut self) -> Result<StructField, ParseError> {
+        let start = self.cur_span().start;
+        let name = self.parse_identifier()?;
+        self.consume(TokenKind::Colon)?;
+        let ty = self.parse_type()?;
+        Ok(StructField { name, ty, span: self.span_from(start) })
+    }
+    
+    fn parse_enum_decl(&mut self) -> Result<Enum, ParseError> {
+        let start = self.cur_span().start;
+        self.consume(TokenKind::Enum)?;
+        let name = self.parse_identifier()?;
+        let variants = self.parse_braced_list("variant", |p| p.parse_enum_variant())?;
+        Ok(Enum { name, variants, span: self.span_from(start) })
+    }
+
+    fn parse_enum_variant(&mut self) -> Result<EnumVariant, ParseError> {
+        let start = self.cur_span().start;
+        let name = self.parse_identifier()?;
+
+        let ty_fields = if self.peek_is(TokenKind::LParen) {
+            self.parse_comma_list(TokenKind::LParen, TokenKind::RParen, "enum field", |p| p.parse_type())?
+        } else {
+            Vec::new()
+        };
+
+        Ok(EnumVariant { name, ty_fields, span: self.span_from(start) })
     }
 
     fn parse_let_stmt(&mut self) -> Result<Let, ParseError> {
@@ -98,42 +135,5 @@ impl Parser {
         };
 
         Ok(If { condition, then_block, else_branch, span: self.span_from(start) })
-    }
-
-    fn parse_type_decl(&mut self) -> Result<Type, ParseError> {
-        let start = self.cur_span().start;
-        self.consume(TokenKind::Type)?;
-        let name = self.parse_identifier()?;
-        let variants = self.parse_braced_list("variant", |p| p.parse_type_variant())?;
-        Ok(Type { name, variants, span: self.span_from(start) })
-    }
-
-    fn parse_type_variant(&mut self) -> Result<TypeVariant, ParseError> {
-        let start = self.cur_span().start;
-        let name = self.parse_identifier()?;
-
-        let ty_fields = if self.peek_is(TokenKind::LParen) {
-            self.parse_comma_list(TokenKind::LParen, TokenKind::RParen, "type field", |p| p.parse_type())?
-        } else {
-            Vec::new()
-        };
-
-        Ok(TypeVariant { name, ty_fields, span: self.span_from(start) })
-    }
-
-    fn parse_struct_decl(&mut self) -> Result<Struct, ParseError> {
-        let start = self.cur_span().start;
-        self.consume(TokenKind::Struct)?;
-        let name = self.parse_identifier()?;
-        let fields = self.parse_braced_list("field", |p| p.parse_struct_field())?;
-        Ok(Struct { name, fields, span: self.span_from(start) })
-    }
-
-    fn parse_struct_field(&mut self) -> Result<StructField, ParseError> {
-        let start = self.cur_span().start;
-        let name = self.parse_identifier()?;
-        self.consume(TokenKind::Colon)?;
-        let ty = self.parse_type()?;
-        Ok(StructField { name, ty, span: self.span_from(start) })
     }
 }
