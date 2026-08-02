@@ -120,15 +120,22 @@ impl Parser {
         let condition = self.parse_expr()?;
         let then_block = self.parse_block()?;
 
-        let else_branch = match self.peek() {
-            TokenKind::Elif => Some(Else::ElseIf(Box::new(self.parse_if_stmt()?))),
-            TokenKind::Else => {
-                self.advance();
-                Some(Else::Block(self.parse_block()?))
-            }
-            _ => None
+        let mut elifs = Vec::new();
+        while self.peek_is(TokenKind::Elif) {
+            let elif_start = self.cur_span().start;
+            self.advance();
+            let condition = self.parse_expr()?;
+            let then_block = self.parse_block()?;
+            elifs.push(Elif { condition, then_block, span: self.span_from(elif_start) });
+        }
+
+        let else_block = if self.peek_is(TokenKind::Else) {
+            self.advance();
+            Some(self.parse_block()?)
+        } else {
+            None
         };
 
-        Ok(If { condition, then_block, else_branch, span: self.span_from(start) })
+        Ok(If { condition, then_block, elifs, else_block, span: self.span_from(start) })
     }
 }

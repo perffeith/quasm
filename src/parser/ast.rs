@@ -97,7 +97,15 @@ pub struct Return {
 pub struct If {
     pub condition: Expr,
     pub then_block: Block,
-    pub else_branch: Option<Else>,
+    pub elifs: Vec<Elif>,
+    pub else_block: Option<Block>,
+    pub span: Span
+}
+
+#[derive(Debug)]
+pub struct Elif {
+    pub condition: Expr,
+    pub then_block: Block,
     pub span: Span
 }
 
@@ -106,12 +114,6 @@ pub struct Assign {
     pub target: Expr,
     pub value: Expr,
     pub span: Span
-}
-
-#[derive(Debug)]
-pub enum Else {
-    ElseIf(Box<If>),
-    Block(Block)
 }
 
 #[derive(Debug)]
