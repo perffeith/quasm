@@ -10,10 +10,11 @@ pub struct Program {
 pub enum Stmt {
     Func(Func),
     Struct(Struct),
-    Let(Let),
-    Assign(Assign),
     Type(Type),
+    Let(Let),
+    Return(Return),
     If(If),
+    Assign(Assign),
     Expr(Expr)
 }
 
@@ -64,9 +65,9 @@ pub struct Let {
 }
 
 #[derive(Debug)]
-pub struct Assign {
-    pub target: Expr,
-    pub value: Expr
+pub struct Return {
+    pub value: Option<Expr>,
+    pub span: Span
 }
 
 #[derive(Debug)]
@@ -74,6 +75,12 @@ pub struct If {
     pub condition: Expr,
     pub then_block: Block,
     pub else_branch: Option<Else>
+}
+
+#[derive(Debug)]
+pub struct Assign {
+    pub target: Expr,
+    pub value: Expr
 }
 
 #[derive(Debug)]

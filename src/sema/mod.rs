@@ -90,6 +90,9 @@ impl Sema {
                     self.sym_table.define_struct(&struc.name.value)
                         .map_err(|msg| self.err(msg, struc.name.span))?;
                 }
+                ast::Stmt::Return(ret) => {
+                    return Err(self.err("top level should not contain return", ret.span));
+                }
                 ast::Stmt::Let(s) => {
                     return Err(self.err("top level should not contain let statement", s.name.span));
                 }
@@ -149,6 +152,7 @@ impl Sema {
     fn check_stmt(&mut self, stmt: ast::Stmt) -> Result<tast::Stmt, SemaError> {
         match stmt {
             ast::Stmt::Func(func) => Ok(tast::Stmt::Func(self.check_func_decl(func)?)),
+            ast::Stmt::Return(ret) => Ok(tast::Stmt::Return(self.check_return(ret)?)),
             ast::Stmt::Struct(struc) => Ok(tast::Stmt::Struct(self.check_struct_decl(struc)?)),
             ast::Stmt::Let(let_stmt) => Ok(tast::Stmt::Let(self.check_let(let_stmt)?)),
             ast::Stmt::Assign(assign) => Ok(tast::Stmt::Assign(self.check_assign(assign)?)),
@@ -229,6 +233,10 @@ impl Sema {
             .map_err(|msg| self.err(msg, let_stmt.name.span))?;
 
         Ok(tast::Let { id, is_mut: let_stmt.is_mut, value, value_ty, ty: Ty::Unit })
+    }
+
+    fn check_return(&mut self, ret: ast::Return) -> Result<tast::Return, SemaError> {
+        todo!("check return")
     }
 
     fn check_assign(&mut self, assign: ast::Assign) -> Result<tast::Assign, SemaError> {

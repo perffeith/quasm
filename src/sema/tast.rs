@@ -18,6 +18,7 @@ pub enum Stmt {
     Func(Func),
     Struct(Struct),
     Let(Let),
+    Return(Return),
     Assign(Assign),
     Expr(Expr)
 }
@@ -28,6 +29,12 @@ pub struct Func {
     pub params: Vec<Param>,
     pub ret_ty: Ty,
     pub body: Block
+}
+
+#[derive(Debug)]
+pub struct Return {
+    pub value: Option<Expr>,
+    pub ty: Ty
 }
 
 #[derive(Debug)]

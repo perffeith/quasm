@@ -77,6 +77,7 @@ impl Lower {
     fn lower_stmt(&mut self, stmt: &tast::Stmt) -> ir::Expr {
         match stmt {
             tast::Stmt::Let(let_stmt) => self.lower_local_decl(let_stmt.id, &let_stmt.value_ty, &let_stmt.value),
+            tast::Stmt::Return(_) => todo!("return"),
             tast::Stmt::Assign(assign) => {
                 let value = self.lower_expr(&assign.value);
                 ir::Expr {

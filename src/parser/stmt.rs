@@ -7,6 +7,7 @@ impl Parser {
     pub(super) fn parse_stmt(&mut self) -> Result<Stmt, ParseError> {
         match self.peek() {
             TokenKind::Func => Ok(Stmt::Func(self.parse_func_decl()?)),
+            TokenKind::Return => Ok(Stmt::Return(self.parse_return()?)),
             TokenKind::Struct => Ok(Stmt::Struct(self.parse_struct_decl()?)),
             TokenKind::Let => Ok(Stmt::Let(self.parse_let_stmt()?)),
             TokenKind::Type => Ok(Stmt::Type(self.parse_type_decl()?)),
@@ -59,6 +60,23 @@ impl Parser {
         self.consume(TokenKind::Eq)?;
         let value = self.parse_expr()?;
         Ok(Let { name, is_mut, annot_ty, value })
+    }
+
+    fn parse_return(&mut self) -> Result<Return, ParseError> {
+        self.consume(TokenKind::Return)?;
+
+        let span = self.cur_span();
+        let value = match self.peek() {
+            TokenKind::Newline | TokenKind::RBrace => None,
+            _ => Some(self.parse_expr()?)
+        };
+
+        let span = match &value {
+            Some(expr) => expr.span,
+            None => span
+        };
+
+        Ok(Return { value, span })
     }
 
     fn parse_if_stmt(&mut self) -> Result<If, ParseError> {
