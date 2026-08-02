@@ -97,16 +97,16 @@ impl Sema {
                     return Err(self.err("top level should not contain let statement", s.name.span));
                 }
                 ast::Stmt::Assign(s) => {
-                    return Err(self.err("top level should not contain assignment", s.target.span));
+                    return Err(self.err("top level should not contain assignment", s.target.span()));
                 }
                 ast::Stmt::If(s) => {
-                    return Err(self.err("top level should not contain if statement", s.condition.span));
+                    return Err(self.err("top level should not contain if statement", s.condition.span()));
                 }
                 ast::Stmt::Type(s) => {
                     return Err(self.err("not implemented yet", s.name.span));
                 }
                 ast::Stmt::Expr(e) => {
-                    return Err(self.err("top level should not contain expression", e.span));
+                    return Err(self.err("top level should not contain expression", e.span()));
                 }
             }
         }
@@ -160,7 +160,7 @@ impl Sema {
                 Err(self.err("not implemented yet", type_stmt.name.span))
             }
             ast::Stmt::If(if_stmt) => {
-                Err(self.err("not implemented yet", if_stmt.condition.span))
+                Err(self.err("not implemented yet", if_stmt.condition.span()))
             }
             ast::Stmt::Expr(expr) => Ok(tast::Stmt::Expr(self.check_expr(expr)?))
         }
@@ -191,10 +191,11 @@ impl Sema {
         }
 
         // build body
+        let body_span = func.body.span;
         let body = self.check_block(func.body)?;
         self.sym_table.exit_func();
 
-        self.expect_eq(&ret_ty, &body.ty, body.span, || {
+        self.expect_eq(&ret_ty, &body.ty, body_span, || {
             format!("type mismatch for function `{}` return type", name)
         })?;
 
@@ -240,8 +241,9 @@ impl Sema {
     }
 
     fn check_assign(&mut self, assign: ast::Assign) -> Result<tast::Assign, SemaError> {
-        let ast::ExprKind::Identifier(target) = assign.target.kind else {
-            return Err(self.err("invalid assignment target", assign.target.span));
+        let target_span = assign.target.span();
+        let ast::Expr::Identifier(target) = assign.target else {
+            return Err(self.err("invalid assignment target", target_span));
         };
 
         let Some(var_symbol) = self.sym_table.lookup_var(&target.value) else {
@@ -270,8 +272,8 @@ impl Sema {
     }
 
     fn check_expr(&mut self, expr: ast::Expr) -> Result<tast::Expr, SemaError> {
-        match expr.kind {
-            ast::ExprKind::Literal(lit) => {
+        match expr {
+            ast::Expr::Literal(lit, _) => {
                 let ty = match lit {
                     Literal::Int(_) => Ty::Int,
                     Literal::Float(_) => Ty::Float,
@@ -279,12 +281,12 @@ impl Sema {
                 };
                 Ok(tast::Expr { kind: tast::ExprKind::Literal(lit), ty })
             }
-            ast::ExprKind::Block(block) => {
+            ast::Expr::Block(block) => {
                 let block = self.check_block(block)?;
                 let ty = block.ty.clone();
                 Ok(tast::Expr { kind: tast::ExprKind::Block(block), ty })
             }
-            ast::ExprKind::Identifier(identifier) => {
+            ast::Expr::Identifier(identifier) => {
                 let Some(var_symbol) = self.sym_table.lookup_var(&identifier.value) else {
                     return Err(self.err(
                         format!("cannot find `{}` in this scope", identifier.value),
@@ -293,19 +295,17 @@ impl Sema {
                 };
                 Ok(tast::Expr { kind: tast::ExprKind::VarRef(var_symbol.id), ty: var_symbol.ty.clone() })
             }
-            ast::ExprKind::BinaryOp(binaryop) => {
+            ast::Expr::BinaryOp(binaryop) => {
                 let binaryop = self.check_binaryop(binaryop)?;
                 let ty = binaryop.ty.clone();
                 Ok(tast::Expr { kind: tast::ExprKind::BinaryOp(binaryop), ty })
             }
-            ast::ExprKind::Call(call) => self.check_call(call),
+            ast::Expr::Call(call) => self.check_call(call),
             _ => Ok(tast::Expr { kind: tast::ExprKind::Error, ty: Ty::Unit })
         }
     }
 
     fn check_block(&mut self, block: ast::Block) -> Result<tast::Block, SemaError> {
-        let span = block.span;
-
         self.sym_table.enter_scope();
         let mut stmts = Vec::new();
         for stmt in block.stmts {
@@ -319,11 +319,11 @@ impl Sema {
             _ => Ty::Unit
         };
 
-        Ok(tast::Block { stmts, ty, span })
+        Ok(tast::Block { stmts, ty })
     }
 
     fn check_binaryop(&mut self, binaryop: ast::BinaryOp) -> Result<tast::BinaryOp, SemaError> {
-        let span = binaryop.left.span;
+        let span = binaryop.left.span();
         let left = self.check_expr(*binaryop.left)?;
         let right = self.check_expr(*binaryop.right)?;
 
@@ -338,15 +338,15 @@ impl Sema {
     }
 
     fn check_call(&mut self, call: ast::Call) -> Result<tast::Expr, SemaError> {
-        let span = call.callee.span;
+        let span = call.callee.span();
 
         let mut args = Vec::new();
         for arg in call.args {
             args.push(self.check_expr(arg)?);
         }
 
-        match call.callee.kind {
-            ast::ExprKind::Identifier(identifier) => {
+        match *call.callee {
+            ast::Expr::Identifier(identifier) => {
                 let name = identifier.value;
 
                 // PascalCase names resolve to struct literal

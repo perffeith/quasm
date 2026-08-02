@@ -6,15 +6,15 @@ use super::Parser;
 use super::ParseError;
 
 fn new_binary(op: BinOpKind, left: Expr, right: Expr) -> Expr {
-    let span = left.span.to(right.span);
-    Expr { kind: ExprKind::BinaryOp(BinaryOp {op, left: Box::new(left), right: Box::new(right)}), span }
+    let span = left.span().to(right.span());
+    Expr::BinaryOp(BinaryOp { op, left: Box::new(left), right: Box::new(right), span })
 }
 
 impl Parser {
     fn literal_expr(&mut self, literal: Literal) -> Expr {
         let span = self.cur_span();
         self.advance();
-        Expr { kind: ExprKind::Literal(literal), span }
+        Expr::Literal(literal, span)
     }
 
     pub(super) fn parse_block(&mut self) -> Result<Block, ParseError> {
@@ -35,9 +35,10 @@ impl Parser {
     }
 
     pub(super) fn parse_param(&mut self) -> Result<Param, ParseError> {
+        let start = self.cur_span().start;
         let name = self.parse_identifier()?;
         let ty = self.parse_type_annotation()?;
-        Ok(Param { name, ty })
+        Ok(Param { name, ty, span: self.span_from(start) })
     }
 
     pub(super) fn parse_expr(&mut self) -> Result<Expr, ParseError> {
@@ -144,8 +145,8 @@ impl Parser {
         let start = self.cur_span().start;
         self.advance();
         let operand = self.parse_unary()?;
-        let span = Span { start, end: operand.span.end };
-        Ok(Expr { kind: ExprKind::UnaryOp { op, operand: Box::new(operand) }, span })
+        let span = Span { start, end: operand.span().end };
+        Ok(Expr::UnaryOp(UnaryOp { op, operand: Box::new(operand), span }))
     }
 
     fn parse_postfix(&mut self) -> Result<Expr, ParseError> {
@@ -158,24 +159,24 @@ impl Parser {
                     let name = self.parse_identifier()?;
                     if self.peek_is(TokenKind::LParen) {
                         let args = self.parse_call_args()?;
-                        let span = self.span_from(expr.span.start);
-                        expr = Expr { kind: ExprKind::DotCall { base: Box::new(expr), callee: name, args }, span };
+                        let span = self.span_from(expr.span().start);
+                        expr = Expr::DotCall(DotCall { base: Box::new(expr), callee: name, args, span });
                     } else {
-                        let span = expr.span.to(name.span);
-                        expr = Expr { kind: ExprKind::DotAccess { base: Box::new(expr), name }, span };
+                        let span = expr.span().to(name.span);
+                        expr = Expr::DotAccess(DotAccess { base: Box::new(expr), name, span });
                     }
                 }
                 TokenKind::LParen => {
                     let args = self.parse_call_args()?;
-                    let span = self.span_from(expr.span.start);
-                    expr = Expr { kind: ExprKind::Call(Call { callee: Box::new(expr), args }), span };
+                    let span = self.span_from(expr.span().start);
+                    expr = Expr::Call(Call { callee: Box::new(expr), args, span });
                 }
                 TokenKind::LBracket => {
                     self.advance();
                     let index = self.parse_expr()?;
                     self.consume(TokenKind::RBracket)?;
-                    let span = self.span_from(expr.span.start);
-                    expr = Expr { kind: ExprKind::Index { base: Box::new(expr), index: Box::new(index) }, span };
+                    let span = self.span_from(expr.span().start);
+                    expr = Expr::Index(Index { base: Box::new(expr), index: Box::new(index), span });
                 }
                 _ => break
             }
@@ -209,20 +210,16 @@ impl Parser {
             TokenKind::LBracket => {
                 let start = self.cur_span().start;
                 let elems = self.parse_comma_list(TokenKind::LBracket, TokenKind::RBracket, "element", |p| p.parse_expr())?;
-                Ok(Expr { kind: ExprKind::Array(elems), span: self.span_from(start) })
+                Ok(Expr::Array(elems, self.span_from(start)))
             }
             TokenKind::LBrace => {
-                let block = self.parse_block()?;
-                let span = block.span;
-                Ok(Expr { kind: ExprKind::Block(block), span })
+                Ok(Expr::Block(self.parse_block()?))
             }
             TokenKind::VerBar | TokenKind::Or => {
                 self.parse_closure()
             }
             TokenKind::Identifier(_) => {
-                let ident = self.parse_identifier()?;
-                let span = ident.span;
-                Ok(Expr { kind: ExprKind::Identifier(ident), span })
+                Ok(Expr::Identifier(self.parse_identifier()?))
             }
             other => Err(self.err(format!("expected expression, got {:?}", other)))
         }
@@ -253,7 +250,7 @@ impl Parser {
         self.consume(TokenKind::FatArrow)?;
         let body = self.parse_expr()?;
 
-        let span = Span { start, end: body.span.end };
-        Ok(Expr { kind: ExprKind::Closure { params, ret, body: Box::new(body) }, span })
+        let span = Span { start, end: body.span().end };
+        Ok(Expr::Closure(Closure { params, ret, body: Box::new(body), span }))
     }
 }

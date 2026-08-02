@@ -1,6 +1,5 @@
 use crate::common::ast::{Literal, BinOpKind, UnaryOpKind};
 use crate::sema::ty::Ty;
-use crate::common::span::Span;
 
 pub type VarId = u64;
 pub type FuncId = u64;
@@ -102,8 +101,7 @@ pub enum ExprKind {
 #[derive(Debug)]
 pub struct Block {
     pub stmts: Vec<Stmt>,
-    pub ty: Ty,
-    pub span: Span
+    pub ty: Ty
 }
 
 #[derive(Debug)]

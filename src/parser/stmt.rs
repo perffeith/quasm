@@ -15,9 +15,10 @@ impl Parser {
             _ => {
                 let expr = self.parse_expr()?;
                 if self.peek_is(TokenKind::Eq) {
+                    let start = expr.span().start;
                     self.advance();
                     let value = self.parse_expr()?;
-                    Ok(Stmt::Assign(Assign { target: expr, value }))
+                    Ok(Stmt::Assign(Assign { target: expr, value, span: self.span_from(start) }))
                 } else {
                     Ok(Stmt::Expr(expr))
                 }
@@ -26,6 +27,7 @@ impl Parser {
     }
 
     fn parse_func_decl(&mut self) -> Result<Func, ParseError> {
+        let start = self.cur_span().start;
         self.consume(TokenKind::Func)?;
         let name = self.parse_identifier()?;
         let params = self.parse_func_params()?;
@@ -36,7 +38,7 @@ impl Parser {
             None
         };
         let body = self.parse_block()?;
-        Ok(Func { name, params, ret, body })
+        Ok(Func { name, params, ret, body, span: self.span_from(start) })
     }
 
     fn parse_func_params(&mut self) -> Result<Vec<Param>, ParseError> {
@@ -50,6 +52,7 @@ impl Parser {
     }
 
     fn parse_let_stmt(&mut self) -> Result<Let, ParseError> {
+        let start = self.cur_span().start;
         self.consume(TokenKind::Let)?;
         let is_mut = self.peek_is(TokenKind::Mut);
         if is_mut {
@@ -59,7 +62,7 @@ impl Parser {
         let annot_ty = self.parse_type_annotation()?;
         self.consume(TokenKind::Eq)?;
         let value = self.parse_expr()?;
-        Ok(Let { name, is_mut, annot_ty, value })
+        Ok(Let { name, is_mut, annot_ty, value, span: self.span_from(start) })
     }
 
     fn parse_return(&mut self) -> Result<Return, ParseError> {
@@ -72,7 +75,7 @@ impl Parser {
         };
 
         let span = match &value {
-            Some(expr) => expr.span,
+            Some(expr) => expr.span(),
             None => span
         };
 
@@ -80,6 +83,7 @@ impl Parser {
     }
 
     fn parse_if_stmt(&mut self) -> Result<If, ParseError> {
+        let start = self.cur_span().start;
         self.consume(TokenKind::If)?;
         let condition = self.parse_expr()?;
         let then_block = self.parse_block()?;
@@ -93,17 +97,19 @@ impl Parser {
             _ => None
         };
 
-        Ok(If { condition, then_block, else_branch })
+        Ok(If { condition, then_block, else_branch, span: self.span_from(start) })
     }
 
     fn parse_type_decl(&mut self) -> Result<Type, ParseError> {
+        let start = self.cur_span().start;
         self.consume(TokenKind::Type)?;
         let name = self.parse_identifier()?;
         let variants = self.parse_braced_list("variant", |p| p.parse_type_variant())?;
-        Ok(Type { name, variants })
+        Ok(Type { name, variants, span: self.span_from(start) })
     }
 
     fn parse_type_variant(&mut self) -> Result<TypeVariant, ParseError> {
+        let start = self.cur_span().start;
         let name = self.parse_identifier()?;
 
         let ty_fields = if self.peek_is(TokenKind::LParen) {
@@ -112,20 +118,22 @@ impl Parser {
             Vec::new()
         };
 
-        Ok(TypeVariant { name, ty_fields })
+        Ok(TypeVariant { name, ty_fields, span: self.span_from(start) })
     }
 
     fn parse_struct_decl(&mut self) -> Result<Struct, ParseError> {
+        let start = self.cur_span().start;
         self.consume(TokenKind::Struct)?;
         let name = self.parse_identifier()?;
         let fields = self.parse_braced_list("field", |p| p.parse_struct_field())?;
-        Ok(Struct { name, fields })
+        Ok(Struct { name, fields, span: self.span_from(start) })
     }
 
     fn parse_struct_field(&mut self) -> Result<StructField, ParseError> {
+        let start = self.cur_span().start;
         let name = self.parse_identifier()?;
         self.consume(TokenKind::Colon)?;
         let ty = self.parse_type()?;
-        Ok(StructField { name, ty })
+        Ok(StructField { name, ty, span: self.span_from(start) })
     }
 }
