@@ -25,7 +25,7 @@ impl Lower {
             Ty::Int => IrTy::I64,
             Ty::Float => IrTy::F64,
             Ty::Bool => IrTy::I32,
-            Ty::Unit => IrTy::Unit,
+            Ty::Void => IrTy::Void,
             Ty::Struct(_) => todo!("struct types"),
             Ty::Array(_) => todo!("array types"),
             Ty::Func { .. } => todo!("function types"),

@@ -65,7 +65,7 @@ impl Sema {
                 let params = params.iter().map(|p| self.resolve_ty(p)).collect::<Result<_,_>>()?;
                 let ret = match ret {
                     Some(r) => self.resolve_ty(r)?,
-                    None => Ty::Unit
+                    None => Ty::Void
                 };
                 Ok(Ty::Func { params, ret: Box::new(ret) })
             }
@@ -122,7 +122,7 @@ impl Sema {
                     let params_ty = self.resolve_func_params_ty(func)?;
                     let ret = match &func.ret {
                         Some(ret) => self.resolve_ty(ret)?,
-                        None => Ty::Unit
+                        None => Ty::Void
                     };
                     self.sym_table.define_func(&name, params_ty, ret)
                         .map_err(|msg| self.err(msg, func.name.span))?;
@@ -216,7 +216,7 @@ impl Sema {
                 ty: ty.clone()
             }).collect();
 
-        Ok(tast::Struct { id, fields, ty: Ty::Unit })
+        Ok(tast::Struct { id, fields, ty: Ty::Void })
     }
 
     fn check_let(&mut self, let_stmt: ast::Let) -> Result<tast::Let, SemaError> {
@@ -236,7 +236,7 @@ impl Sema {
         let id = self.sym_table.define_var(&let_stmt.name.value, let_stmt.is_mut, value_ty.clone())
             .map_err(|msg| self.err(msg, let_stmt.name.span))?;
 
-        Ok(tast::Let { id, is_mut: let_stmt.is_mut, value, value_ty, ty: Ty::Unit })
+        Ok(tast::Let { id, is_mut: let_stmt.is_mut, value, value_ty, ty: Ty::Void })
     }
 
     fn check_return(&mut self, _ret: ast::Return) -> Result<tast::Return, SemaError> {
@@ -271,7 +271,7 @@ impl Sema {
             format!("type mismatch for `{}`", target.value)
         })?;
 
-        Ok(tast::Assign { id, value, ty: Ty::Unit })
+        Ok(tast::Assign { id, value, ty: Ty::Void })
     }
 
     fn check_expr(&mut self, expr: ast::Expr) -> Result<tast::Expr, SemaError> {
@@ -313,10 +313,10 @@ impl Sema {
         }
         self.sym_table.exit_scope();
 
-        // a block evaluates to its trailing expression, otherwise to unit
+        // a block evaluates to its trailing statement, otherwise to void
         let ty = match stmts.last() {
             Some(tast::Stmt::Expr(expr)) => expr.ty().clone(),
-            _ => Ty::Unit
+            _ => Ty::Void
         };
 
         Ok(tast::Block { stmts, ty })

@@ -20,7 +20,7 @@ pub enum IrTy {
     I32,
     I64,
     F64,
-    Unit // erased by codegen (no wasm value)
+    Void // erased by codegen (no wasm value)
 }
 
 #[derive(Debug)]
@@ -48,7 +48,7 @@ pub enum Expr {
     ConstInt(i64),
     ConstFloat(f64),
     ConstBool(bool),
-    Unit,
+    Void,
     LocalSet(LocalSet),
     LocalGet(LocalGet),
     Binary(Binary),
@@ -66,7 +66,7 @@ impl Expr {
             Expr::ConstInt(_) => IrTy::I64,
             Expr::ConstFloat(_) => IrTy::F64,
             Expr::ConstBool(_) => IrTy::I32,
-            Expr::Unit | Expr::LocalSet(_) => IrTy::Unit,
+            Expr::Void | Expr::LocalSet(_) => IrTy::Void,
             Expr::LocalGet(e) => e.ty,
             Expr::Binary(e) => e.ty,
             Expr::Unary(e) => e.ty,
