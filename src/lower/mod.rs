@@ -53,7 +53,7 @@ impl Lower {
 
     fn lower_block(&mut self, block: &tast::Block) -> ir::Expr {
         let exprs = block.stmts.iter().map(|stmt| self.lower_stmt(stmt)).collect();
-        ir::Expr { kind: ir::ExprKind::Block(exprs), ty: self.lower_ty(&block.ty) }
+        ir::Expr::Block(ir::Block { exprs, ty: self.lower_ty(&block.ty) })
     }
 
     fn lower_func_decl(&mut self, func: &tast::Func) -> ir::Func {
@@ -80,10 +80,7 @@ impl Lower {
             tast::Stmt::Return(_) => todo!("return"),
             tast::Stmt::Assign(assign) => {
                 let value = self.lower_expr(&assign.value);
-                ir::Expr {
-                    kind: ir::ExprKind::LocalSet { id: assign.id, value: Box::new(value) },
-                    ty: IrTy::Unit
-                }
+                ir::Expr::LocalSet(ir::LocalSet { id: assign.id, value: Box::new(value) })
             }
             tast::Stmt::Expr(expr) => self.lower_expr(expr),
             tast::Stmt::Func(_) => unreachable!("nested functions"),
@@ -95,40 +92,37 @@ impl Lower {
         self.locals.push(self.lower_ty(value_ty));
 
         let value = self.lower_expr(value);
-        ir::Expr {
-            kind: ir::ExprKind::LocalSet { id, value: Box::new(value) },
-            ty: IrTy::Unit
-        }
+        ir::Expr::LocalSet(ir::LocalSet { id, value: Box::new(value) })
     }
 
     fn lower_expr(&mut self, expr: &tast::Expr) -> ir::Expr {
-        let ty = self.lower_ty(expr.ty());
-
-        let kind = match expr {
+        match expr {
             tast::Expr::Literal(lit, _) => match lit {
-                Literal::Int(v) => ir::ExprKind::ConstInt(*v),
-                Literal::Float(v) => ir::ExprKind::ConstFloat(*v),
-                Literal::Bool(v) => ir::ExprKind::ConstBool(*v)
+                Literal::Int(v) => ir::Expr::ConstInt(*v),
+                Literal::Float(v) => ir::Expr::ConstFloat(*v),
+                Literal::Bool(v) => ir::Expr::ConstBool(*v)
             },
-            tast::Expr::VarRef(id, _) => ir::ExprKind::LocalGet(*id),
-            tast::Expr::FuncRef(id, _) => ir::ExprKind::FuncRef(*id),
-            tast::Expr::Block(block) => return self.lower_block(block),
+            tast::Expr::VarRef(id, _) => {
+                ir::Expr::LocalGet(ir::LocalGet { id: *id, ty: self.lower_ty(expr.ty()) })
+            }
+            tast::Expr::FuncRef(id, _) => ir::Expr::FuncRef(*id),
+            tast::Expr::Block(block) => self.lower_block(block),
             tast::Expr::BinaryOp(binop) => {
+                let ty = self.lower_ty(&binop.ty);
                 let left = self.lower_expr(&binop.left);
                 let right = self.lower_expr(&binop.right);
-                ir::ExprKind::Binary { op: binop.op, left: Box::new(left), right: Box::new(right) }
+                ir::Expr::Binary(ir::Binary { op: binop.op, left: Box::new(left), right: Box::new(right), ty })
             }
             tast::Expr::UnaryOp(_) => todo!("unary ir"),
             tast::Expr::Call(call) => {
+                let ty = self.lower_ty(&call.ty);
                 let args = call.args.iter().map(|arg| self.lower_expr(arg)).collect();
                 match call.callee.as_ref() {
-                    tast::Expr::FuncRef(id, _) => ir::ExprKind::Call(ir::Call { func: *id, args }),
+                    tast::Expr::FuncRef(id, _) => ir::Expr::Call(ir::Call { func: *id, args, ty }),
                     _ => todo!("other kind of calls?? bug or todo not sure tbh; gotta figure it out later")
                 }
             }
             tast::Expr::StructLit(_) => todo!("struct literals")
-        };
-
-        ir::Expr { kind, ty }
+        }
     }
 }
