@@ -212,7 +212,7 @@ impl Sema {
 
         let fields = symbol.fields.values().enumerate()
             .map(|(i, ty)| tast::StructField {
-                id: i as tast::StructFieldId,
+                id: tast::StructFieldId(i as u64),
                 ty: ty.clone()
             }).collect();
 
@@ -295,7 +295,7 @@ impl Sema {
                         identifier.span
                     ));
                 };
-                Ok(tast::Expr::VarRef(var_symbol.id, var_symbol.ty.clone()))
+                Ok(tast::Expr::VarRef(tast::VarRef { id: var_symbol.id, ty: var_symbol.ty.clone() }))
             }
             ast::Expr::BinaryOp(binaryop) => {
                 Ok(tast::Expr::BinaryOp(self.check_binaryop(binaryop)?))
@@ -385,10 +385,10 @@ impl Sema {
                 }
 
                 // build tast
-                let callee = tast::Expr::FuncRef(
+                let callee = tast::Expr::FuncRef(tast::FuncRef {
                     id,
-                    Ty::Func { params: params_ty, ret: Box::new(ret_ty.clone()) }
-                );
+                    ty: Ty::Func { params: params_ty, ret: Box::new(ret_ty.clone()) }
+                });
 
                 Ok(tast::Expr::Call(tast::Call {
                     callee: Box::new(callee), args, ty: ret_ty

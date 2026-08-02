@@ -2,10 +2,17 @@ use crate::common::Literal;
 use crate::common::op::{BinOpKind, UnaryOpKind};
 use crate::sema::ty::Ty;
 
-pub type VarId = u64;
-pub type FuncId = u64;
-pub type StructId = u64;
-pub type StructFieldId = u64;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct VarId(pub u64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct FuncId(pub u64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct StructId(pub u64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct StructFieldId(pub u64);
 
 #[derive(Debug)]
 pub struct Program {
@@ -82,8 +89,8 @@ pub struct Assign {
 #[derive(Debug)]
 pub enum Expr {
     Literal(Literal, Ty),
-    VarRef(VarId, Ty),
-    FuncRef(FuncId, Ty),
+    VarRef(VarRef),
+    FuncRef(FuncRef),
     Block(Block),
     BinaryOp(BinaryOp),
     UnaryOp(UnaryOp),
@@ -95,8 +102,8 @@ impl Expr {
     pub fn ty(&self) -> &Ty {
         match self {
             Expr::Literal(_, ty) => ty,
-            Expr::VarRef(_, ty) => ty,
-            Expr::FuncRef(_, ty) => ty,
+            Expr::VarRef(e) => &e.ty,
+            Expr::FuncRef(e) => &e.ty,
             Expr::Block(e) => &e.ty,
             Expr::BinaryOp(e) => &e.ty,
             Expr::UnaryOp(e) => &e.ty,
@@ -104,6 +111,18 @@ impl Expr {
             Expr::StructLit(e) => &e.ty
         }
     }
+}
+
+#[derive(Debug)]
+pub struct VarRef {
+    pub id: VarId,
+    pub ty: Ty
+}
+
+#[derive(Debug)]
+pub struct FuncRef {
+    pub id: FuncId,
+    pub ty: Ty
 }
 
 #[derive(Debug)]
