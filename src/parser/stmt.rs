@@ -10,6 +10,7 @@ impl Parser {
             TokenKind::Struct => Ok(Stmt::Struct(self.parse_struct_decl()?)),
             TokenKind::Let => Ok(Stmt::Let(self.parse_let_stmt()?)),
             TokenKind::Type => Ok(Stmt::Type(self.parse_type_decl()?)),
+            TokenKind::If => Ok(Stmt::If(self.parse_if_stmt()?)),
             _ => {
                 let expr = self.parse_expr()?;
                 if self.peek_is(TokenKind::Eq) {
@@ -58,6 +59,23 @@ impl Parser {
         self.consume(TokenKind::Eq)?;
         let value = self.parse_expr()?;
         Ok(Let { name, is_mut, annot_ty, value })
+    }
+
+    fn parse_if_stmt(&mut self) -> Result<If, ParseError> {
+        self.consume(TokenKind::If)?;
+        let condition = self.parse_expr()?;
+        let then_block = self.parse_block()?;
+
+        let else_branch = match self.peek() {
+            TokenKind::Elif => Some(Else::ElseIf(Box::new(self.parse_if_stmt()?))),
+            TokenKind::Else => {
+                self.advance();
+                Some(Else::Block(self.parse_block()?))
+            }
+            _ => None
+        };
+
+        Ok(If { condition, then_block, else_branch })
     }
 
     fn parse_type_decl(&mut self) -> Result<Type, ParseError> {

@@ -1,5 +1,5 @@
 use crate::common::ast::{Literal, BinOpKind, UnaryOpKind};
-use crate::common::span::{Pos, Span};
+use crate::common::span::Span;
 use crate::lexer::TokenKind;
 use super::ast::*;
 use super::Parser;
@@ -216,11 +216,6 @@ impl Parser {
                 let span = block.span;
                 Ok(Expr { kind: ExprKind::Block(block), span })
             }
-            TokenKind::If => {
-                let start = self.cur_span().start;
-                self.advance();
-                self.parse_if_expr(start)
-            }
             TokenKind::VerBar | TokenKind::Or => {
                 self.parse_closure()
             }
@@ -231,33 +226,6 @@ impl Parser {
             }
             other => Err(self.err(format!("expected expression, got {:?}", other)))
         }
-    }
-
-    fn parse_if_expr(&mut self, start: Pos) -> Result<Expr, ParseError> {
-        // start is the position of the already consumed if/elif keyword
-        let condition = self.parse_expr()?;
-        let then_block = self.parse_block()?;
-
-        let else_branch = match self.peek() {
-            TokenKind::Elif => {
-                let elif_start = self.cur_span().start;
-                self.advance();
-                Some(Box::new(self.parse_if_expr(elif_start)?))
-            }
-            TokenKind::Else => {
-                self.advance();
-                let block = self.parse_block()?;
-                let span = block.span;
-                Some(Box::new(Expr { kind: ExprKind::Block(block), span }))
-            }
-            _ => None
-        };
-
-        let end = else_branch.as_ref().map(|e| e.span.end).unwrap_or(then_block.span.end);
-        Ok(Expr {
-            kind: ExprKind::If { condition: Box::new(condition), then_block, else_branch },
-            span: Span { start, end }
-        })
     }
 
     fn parse_call_args(&mut self) -> Result<Vec<Expr>, ParseError> {

@@ -96,6 +96,9 @@ impl Sema {
                 ast::Stmt::Assign(s) => {
                     return Err(self.err("top level should not contain assignment", s.target.span));
                 }
+                ast::Stmt::If(s) => {
+                    return Err(self.err("top level should not contain if statement", s.condition.span));
+                }
                 ast::Stmt::Type(s) => {
                     return Err(self.err("not implemented yet", s.name.span));
                 }
@@ -151,6 +154,9 @@ impl Sema {
             ast::Stmt::Assign(assign) => Ok(tast::Stmt::Assign(self.check_assign(assign)?)),
             ast::Stmt::Type(type_stmt) => {
                 Err(self.err("not implemented yet", type_stmt.name.span))
+            }
+            ast::Stmt::If(if_stmt) => {
+                Err(self.err("not implemented yet", if_stmt.condition.span))
             }
             ast::Stmt::Expr(expr) => Ok(tast::Stmt::Expr(self.check_expr(expr)?))
         }

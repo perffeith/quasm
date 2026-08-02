@@ -13,6 +13,7 @@ pub enum Stmt {
     Let(Let),
     Assign(Assign),
     Type(Type),
+    If(If),
     Expr(Expr)
 }
 
@@ -69,6 +70,19 @@ pub struct Assign {
 }
 
 #[derive(Debug)]
+pub struct If {
+    pub condition: Expr,
+    pub then_block: Block,
+    pub else_branch: Option<Else>
+}
+
+#[derive(Debug)]
+pub enum Else {
+    ElseIf(Box<If>),
+    Block(Block)
+}
+
+#[derive(Debug)]
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span
@@ -101,11 +115,6 @@ pub enum ExprKind {
     DotAccess {
         base: Box<Expr>,
         name: Identifier
-    },
-    If {
-        condition: Box<Expr>,
-        then_block: Block,
-        else_branch: Option<Box<Expr>>
     },
     Closure {
         params: Vec<Param>,
