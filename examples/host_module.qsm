@@ -1,9 +1,0 @@
-// Module import
-@extern "std"
-func print(Int)
-
-// Module export
-@export
-func add(a: Int, b: Int) -> Int {
-    a + b
-}

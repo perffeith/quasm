@@ -13,7 +13,6 @@ pub enum TokenKind {
     #[token("if")] If,
     #[token("elif")] Elif,
     #[token("else")] Else,
-    #[token("match")] Match,
     #[token("for")] For,
     #[token("in")] In,
     #[token("while")] While,
@@ -31,7 +30,6 @@ pub enum TokenKind {
     Identifier(String),
 
     #[token(".")] Dot,
-    #[token("..")] DotDot,
     #[token("!")] Bang,
     #[token("+")] Plus,
     #[token("-")] Minus,

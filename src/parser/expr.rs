@@ -17,12 +17,6 @@ impl Parser {
         Expr { kind: ExprKind::Literal(literal), span }
     }
 
-    fn literal_pattern(&mut self, literal: Literal) -> Pattern {
-        let span = self.cur_span();
-        self.advance();
-        Pattern { kind: PatternKind::Literal(literal), span }
-    }
-
     pub(super) fn parse_block(&mut self) -> Result<Block, ParseError> {
         let start = self.cur_span().start;
         let stmts = self.parse_braced_list("statement", |p| p.parse_stmt())?;
@@ -227,9 +221,6 @@ impl Parser {
                 self.advance();
                 self.parse_if_expr(start)
             }
-            TokenKind::Match => {
-                self.parse_match_expr()
-            }
             TokenKind::VerBar | TokenKind::Or => {
                 self.parse_closure()
             }
@@ -296,112 +287,5 @@ impl Parser {
 
         let span = Span { start, end: body.span.end };
         Ok(Expr { kind: ExprKind::Closure { params, ret, body: Box::new(body) }, span })
-    }
-
-    fn parse_match_expr(&mut self) -> Result<Expr, ParseError> {
-        let start = self.cur_span().start;
-        self.consume(TokenKind::Match)?;
-        let subject = self.parse_expr()?;
-        let arms = self.parse_braced_list("match arm", |p| p.parse_match_arm())?;
-        Ok(Expr { kind: ExprKind::Match { subject: Box::new(subject), arms }, span: self.span_from(start) })
-    }
-
-    fn parse_match_arm(&mut self) -> Result<MatchArm, ParseError> {
-        let pattern = self.parse_pattern()?;
-
-        let guard = if self.peek_is(TokenKind::If) {
-            self.advance();
-            Some(self.parse_expr()?)
-        } else {
-            None
-        };
-
-        self.consume(TokenKind::FatArrow)?;
-        let body = self.parse_expr()?;
-        Ok(MatchArm { pattern, guard, body })
-    }
-
-    fn parse_pattern(&mut self) -> Result<Pattern, ParseError> {
-        let first = self.parse_single_pattern()?;
-        if !self.peek_is(TokenKind::VerBar) {
-            return Ok(first);
-        }
-
-        let mut alternatives = vec![first];
-        while self.peek_is(TokenKind::VerBar) {
-            self.advance();
-            alternatives.push(self.parse_single_pattern()?);
-        }
-        let span = alternatives.first().unwrap().span.to(alternatives.last().unwrap().span);
-        Ok(Pattern { kind: PatternKind::Or(alternatives), span })
-    }
-
-    fn parse_single_pattern(&mut self) -> Result<Pattern, ParseError> {
-        match self.peek() {
-            TokenKind::Int(value) => {
-                Ok(self.literal_pattern(Literal::Int(value)))
-            }
-            TokenKind::Float(value) => {
-                Ok(self.literal_pattern(Literal::Float(value)))
-            }
-            TokenKind::True => {
-                Ok(self.literal_pattern(Literal::Bool(true)))
-            }
-            TokenKind::False => {
-                Ok(self.literal_pattern(Literal::Bool(false)))
-            }
-            TokenKind::Minus => {
-                let start = self.cur_span().start;
-                self.advance();
-                let literal = match self.peek() {
-                    TokenKind::Int(value) => Literal::Int(-value),
-                    TokenKind::Float(value) => Literal::Float(-value),
-                    other => return Err(self.err(format!("expected numeric literal after '-' in pattern, got {:?}", other)))
-                };
-                self.advance();
-                Ok(Pattern { kind: PatternKind::Literal(literal), span: self.span_from(start) })
-            }
-            TokenKind::Identifier(_) => {
-                let name = self.parse_identifier()?;
-                let span = name.span;
-                if name.value == "_" {
-                    return Ok(Pattern { kind: PatternKind::Wildcard, span });
-                }
-                if self.peek_is(TokenKind::LParen) {
-                    let args = self.parse_comma_list(TokenKind::LParen, TokenKind::RParen, "pattern", |p| p.parse_pattern())?;
-                    return Ok(Pattern { kind: PatternKind::Constructor { name, args }, span: self.span_from(span.start) });
-                }
-                Ok(Pattern { kind: PatternKind::Identifier(name), span })
-            }
-            TokenKind::LBracket => self.parse_array_pattern(),
-            other => Err(self.err(format!("expected pattern, got {:?}", other)))
-        }
-    }
-
-    fn parse_array_pattern(&mut self) -> Result<Pattern, ParseError> {
-        let start = self.cur_span().start;
-        let elements = self.parse_comma_list(TokenKind::LBracket, TokenKind::RBracket, "pattern", |p| {
-            if !p.peek_is(TokenKind::DotDot) {
-                return p.parse_pattern();
-            }
-            let rest_start = p.cur_span().start;
-            p.advance();
-            let name = if matches!(p.peek(), TokenKind::Identifier(_)) {
-                Some(p.parse_identifier()?)
-            } else {
-                None
-            };
-            Ok(Pattern { kind: PatternKind::Rest(name), span: p.span_from(rest_start) })
-        })?;
-
-        let rest_count = elements.iter().filter(|e| matches!(e.kind, PatternKind::Rest(_))).count();
-        if rest_count > 1 {
-            return Err(self.err("array pattern can have at most one rest pattern '..'"));
-        }
-        if rest_count == 1 && !matches!(elements.last().map(|e| &e.kind), Some(PatternKind::Rest(_))) {
-            return Err(self.err("rest pattern '..' must be the last element of an array pattern"));
-        }
-
-        Ok(Pattern { kind: PatternKind::Array(elements), span: self.span_from(start) })
     }
 }
