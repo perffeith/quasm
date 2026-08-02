@@ -52,7 +52,10 @@ impl Sema {
                     "Int" => Ok(Ty::Int),
                     "Float" => Ok(Ty::Float),
                     "Bool" => Ok(Ty::Bool),
-                    _ => Err(self.err(format!("unknown type `{}`", name.value), name.span))
+                    _ => match self.sym_table.lookup_struct_id(&name.value) {
+                        Some(id) => Ok(Ty::Struct(id)),
+                        None => Err(self.err(format!("unknown type `{}`", name.value), name.span))
+                    }
                 }
             }
             ast::Ty::Array(inner) => {

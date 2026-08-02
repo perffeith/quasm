@@ -141,7 +141,7 @@ impl SymbolTable {
         Ok(id)
     }
 
-    fn lookup_struct_id(&self, name: &str) -> Option<StructId> {
+    pub fn lookup_struct_id(&self, name: &str) -> Option<StructId> {
         self.struct_ids.get(name).copied()
     }
 
