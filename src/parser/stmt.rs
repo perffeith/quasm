@@ -86,15 +86,11 @@ impl Parser {
     fn parse_let_stmt(&mut self) -> Result<Let, ParseError> {
         let start = self.cur_span().start;
         self.consume(TokenKind::Let)?;
-        let is_mut = self.peek_is(TokenKind::Mut);
-        if is_mut {
-            self.advance();
-        }
         let name = self.parse_identifier()?;
         let annot_ty = self.parse_type_annotation()?;
         self.consume(TokenKind::Eq)?;
         let value = self.parse_expr()?;
-        Ok(Let { name, is_mut, annot_ty, value, span: self.span_from(start) })
+        Ok(Let { name, annot_ty, value, span: self.span_from(start) })
     }
 
     fn parse_return(&mut self) -> Result<Return, ParseError> {

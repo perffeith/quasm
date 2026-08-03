@@ -68,7 +68,6 @@ pub struct StructLit {
 #[derive(Debug)]
 pub struct Let {
     pub id: VarId,
-    pub is_mut: bool,
     pub value: Expr,
     pub value_ty: Ty,
     pub ty: Ty

@@ -81,7 +81,6 @@ pub struct EnumVariant {
 #[derive(Debug)]
 pub struct Let {
     pub name: Identifier,
-    pub is_mut: bool,
     pub value: Expr,
     pub annot_ty: Option<Ty>,
     pub span: Span

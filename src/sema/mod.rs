@@ -186,7 +186,7 @@ impl Sema {
         self.sym_table.enter_func();
         let mut params = Vec::new();
         for (param, ty) in func.params.iter().zip(params_ty) {
-            let id = self.sym_table.define_var(&param.name.value, false, ty.clone())
+            let id = self.sym_table.define_var(&param.name.value, ty.clone())
                 .map_err(|msg| self.err(msg, param.name.span))?;
             params.push(tast::Param { id, ty });
         }
@@ -231,10 +231,10 @@ impl Sema {
             None => value.ty().clone()
         };
 
-        let id = self.sym_table.define_var(&let_stmt.name.value, let_stmt.is_mut, value_ty.clone())
+        let id = self.sym_table.define_var(&let_stmt.name.value, value_ty.clone())
             .map_err(|msg| self.err(msg, let_stmt.name.span))?;
 
-        Ok(tast::Let { id, is_mut: let_stmt.is_mut, value, value_ty, ty: Ty::Void })
+        Ok(tast::Let { id, value, value_ty, ty: Ty::Void })
     }
 
     fn check_return(&mut self, _ret: ast::Return) -> Result<tast::Return, SemaError> {
@@ -282,15 +282,7 @@ impl Sema {
             ));
         };
         let id = var_symbol.id;
-        let is_mut = var_symbol.is_mut;
         let target_ty = var_symbol.ty.clone();
-
-        if !is_mut {
-            return Err(self.err(
-                format!("cannot assign to immutable variable `{}`", target.value),
-                target.span
-            ));
-        }
 
         let value = self.check_expr(assign.value)?;
         self.expect_eq(&target_ty, value.ty(), target.span, || {

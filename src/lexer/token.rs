@@ -9,7 +9,6 @@ pub enum TokenKind {
     #[token("struct")] Struct,
     #[token("enum")] Enum,
     #[token("let")] Let,
-    #[token("mut")] Mut,
     #[token("if")] If,
     #[token("elif")] Elif,
     #[token("else")] Else,

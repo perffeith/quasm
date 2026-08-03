@@ -34,7 +34,6 @@ pub struct StructSymbol {
 
 pub struct VarSymbol {
     pub id: VarId,
-    pub is_mut: bool,
     pub ty: Ty
 }
 
@@ -150,7 +149,7 @@ impl SymbolTable {
     }
     
     // ----Variable related stuffs----
-    pub fn define_var(&mut self, name: &str, is_mut: bool, ty: Ty) -> Result<VarId, String> {
+    pub fn define_var(&mut self, name: &str, ty: Ty) -> Result<VarId, String> {
         if !is_snake_case(name) {
             return Err(format!("variable `{name}` must be snake_case"));
         }
@@ -164,7 +163,7 @@ impl SymbolTable {
             return Err(format!("variable `{name}` is already defined"))
         }
 
-        scope.insert(name.to_string(), VarSymbol { id, is_mut, ty });
+        scope.insert(name.to_string(), VarSymbol { id, ty });
         Ok(id)
     }
 
