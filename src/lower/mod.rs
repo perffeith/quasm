@@ -78,6 +78,7 @@ impl Lower {
         match stmt {
             tast::Stmt::Let(let_stmt) => self.lower_local_decl(let_stmt.id, &let_stmt.value_ty, &let_stmt.value),
             tast::Stmt::Return(_) => todo!("return"),
+            tast::Stmt::If(_) => todo!("if"),
             tast::Stmt::Assign(assign) => {
                 let value = self.lower_expr(&assign.value);
                 ir::Expr::LocalSet(ir::LocalSet { id: ir::LocalId(assign.id.0), value: Box::new(value) })

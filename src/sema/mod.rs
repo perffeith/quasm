@@ -162,9 +162,7 @@ impl Sema {
             ast::Stmt::Enum(type_stmt) => {
                 Err(self.err("not implemented yet", type_stmt.name.span))
             }
-            ast::Stmt::If(if_stmt) => {
-                Err(self.err("not implemented yet", if_stmt.condition.span()))
-            }
+            ast::Stmt::If(if_stmt) => Ok(tast::Stmt::If(self.check_if(if_stmt)?)),
             ast::Stmt::Expr(expr) => Ok(tast::Stmt::Expr(self.check_expr(expr)?))
         }
     }
@@ -241,6 +239,34 @@ impl Sema {
 
     fn check_return(&mut self, _ret: ast::Return) -> Result<tast::Return, SemaError> {
         todo!("check return")
+    }
+
+    fn check_if(&mut self, if_stmt: ast::If) -> Result<tast::If, SemaError> {
+        let condition = self.check_condition(if_stmt.condition)?;
+        let then_block = self.check_block(if_stmt.then_block)?;
+
+        let mut elifs = Vec::new();
+        for elif in if_stmt.elifs {
+            let condition = self.check_condition(elif.condition)?;
+            let then_block = self.check_block(elif.then_block)?;
+            elifs.push(tast::Elif { condition, then_block });
+        }
+
+        let else_block = match if_stmt.else_block {
+            Some(block) => Some(self.check_block(block)?),
+            None => None
+        };
+
+        Ok(tast::If { condition, then_block, elifs, else_block, ty: Ty::Void })
+    }
+
+    fn check_condition(&mut self, condition: ast::Expr) -> Result<tast::Expr, SemaError> {
+        let span = condition.span();
+        let condition = self.check_expr(condition)?;
+        self.expect_eq(&Ty::Bool, condition.ty(), span, || {
+            "condition must be a boolean".to_string()
+        })?;
+        Ok(condition)
     }
 
     fn check_assign(&mut self, assign: ast::Assign) -> Result<tast::Assign, SemaError> {

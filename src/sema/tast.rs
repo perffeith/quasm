@@ -26,6 +26,7 @@ pub enum Stmt {
     Struct(Struct),
     Let(Let),
     Return(Return),
+    If(If),
     Assign(Assign),
     Expr(Expr)
 }
@@ -77,6 +78,21 @@ pub struct Let {
 pub struct Return {
     pub value: Option<Expr>,
     pub ty: Ty
+}
+
+#[derive(Debug)]
+pub struct If {
+    pub condition: Expr,
+    pub then_block: Block,
+    pub elifs: Vec<Elif>,
+    pub else_block: Option<Block>,
+    pub ty: Ty
+}
+
+#[derive(Debug)]
+pub struct Elif {
+    pub condition: Expr,
+    pub then_block: Block
 }
 
 #[derive(Debug)]
