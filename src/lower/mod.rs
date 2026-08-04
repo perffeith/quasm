@@ -51,6 +51,27 @@ impl Lower {
         }
     }
 
+    fn lower_stmt(&mut self, stmt: &tast::Stmt) -> ir::Expr {
+        match stmt {
+            tast::Stmt::Let(let_stmt) => self.lower_local_decl(let_stmt.id, &let_stmt.value_ty, &let_stmt.value),
+            tast::Stmt::Return(ret) => ir::Expr::Return(self.lower_return(ret)),
+            tast::Stmt::If(if_stmt) => ir::Expr::If(self.lower_if(if_stmt)),
+            tast::Stmt::Block(block) => ir::Expr::Block(self.lower_block(block)),
+            tast::Stmt::Assign(assign) => {
+                let value = self.lower_expr(&assign.value);
+                ir::Expr::LocalSet(ir::LocalSet { id: ir::LocalId(assign.id.0), value: Box::new(value) })
+            }
+            tast::Stmt::Expr(expr) => self.lower_expr(expr),
+            tast::Stmt::Func(_) => unreachable!("nested functions"),
+            tast::Stmt::Struct(_) => unreachable!("nested structs")
+        }
+    }
+
+    fn lower_block(&mut self, block: &tast::Block) -> ir::Block {
+        let exprs = block.stmts.iter().map(|stmt| self.lower_stmt(stmt)).collect();
+        ir::Block { exprs, ty: self.lower_ty(&block.ty) }
+    }
+
     fn lower_func_decl(&mut self, func: &tast::Func) -> ir::Func {
         self.locals.clear();
 
@@ -69,25 +90,16 @@ impl Lower {
         }
     }
 
-    fn lower_block(&mut self, block: &tast::Block) -> ir::Block {
-        let exprs = block.stmts.iter().map(|stmt| self.lower_stmt(stmt)).collect();
-        ir::Block { exprs, ty: self.lower_ty(&block.ty) }
+    fn lower_local_decl(&mut self, id: tast::VarId, value_ty: &Ty, value: &tast::Expr) -> ir::Expr {
+        self.locals.push(self.lower_ty(value_ty));
+
+        let value = self.lower_expr(value);
+        ir::Expr::LocalSet(ir::LocalSet { id: ir::LocalId(id.0), value: Box::new(value) })
     }
 
-    fn lower_stmt(&mut self, stmt: &tast::Stmt) -> ir::Expr {
-        match stmt {
-            tast::Stmt::Let(let_stmt) => self.lower_local_decl(let_stmt.id, &let_stmt.value_ty, &let_stmt.value),
-            tast::Stmt::Return(_) => todo!("return"),
-            tast::Stmt::If(if_stmt) => ir::Expr::If(self.lower_if(if_stmt)),
-            tast::Stmt::Block(block) => ir::Expr::Block(self.lower_block(block)),
-            tast::Stmt::Assign(assign) => {
-                let value = self.lower_expr(&assign.value);
-                ir::Expr::LocalSet(ir::LocalSet { id: ir::LocalId(assign.id.0), value: Box::new(value) })
-            }
-            tast::Stmt::Expr(expr) => self.lower_expr(expr),
-            tast::Stmt::Func(_) => unreachable!("nested functions"),
-            tast::Stmt::Struct(_) => unreachable!("nested structs")
-        }
+    fn lower_return(&mut self, ret: &tast::Return) -> ir::Return {
+        let value = ret.value.as_ref().map(|v| Box::new(self.lower_expr(v)));
+        ir::Return { value: value }
     }
 
     fn lower_if(&mut self, if_stmt: &tast::If) -> ir::If {
@@ -106,13 +118,6 @@ impl Lower {
         let condition = Box::new(self.lower_expr(&if_stmt.condition));
         let then_block = Box::new(self.lower_block(&if_stmt.then_block));
         ir::If { condition, then_block, else_block, ty }
-    }
-
-    fn lower_local_decl(&mut self, id: tast::VarId, value_ty: &Ty, value: &tast::Expr) -> ir::Expr {
-        self.locals.push(self.lower_ty(value_ty));
-
-        let value = self.lower_expr(value);
-        ir::Expr::LocalSet(ir::LocalSet { id: ir::LocalId(id.0), value: Box::new(value) })
     }
 
     fn lower_expr(&mut self, expr: &tast::Expr) -> ir::Expr {

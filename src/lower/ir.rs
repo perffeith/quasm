@@ -56,14 +56,15 @@ pub enum Expr {
     Void,
     LocalSet(LocalSet),
     LocalGet(LocalGet),
-    Binary(Binary),
-    Unary(Unary),
+    Return(Return),
     Block(Block),
     If(If),
     Call(Call),
     FuncRef(FuncId),
     StructNew(StructNew),
-    StructGet(StructGet)
+    StructGet(StructGet),
+    Binary(Binary),
+    Unary(Unary)
 }
 
 impl Expr {
@@ -72,7 +73,7 @@ impl Expr {
             Expr::ConstInt(_) => IrTy::I64,
             Expr::ConstFloat(_) => IrTy::F64,
             Expr::ConstBool(_) => IrTy::I32,
-            Expr::Void | Expr::LocalSet(_) => IrTy::Void,
+            Expr::Void | Expr::LocalSet(_) | Expr::Return(_) => IrTy::Void,
             Expr::LocalGet(e) => e.ty,
             Expr::Binary(e) => e.ty,
             Expr::Unary(e) => e.ty,
@@ -99,18 +100,8 @@ pub struct LocalGet {
 }
 
 #[derive(Debug)]
-pub struct Binary {
-    pub op: BinOpKind,
-    pub left: Box<Expr>,
-    pub right: Box<Expr>,
-    pub ty: IrTy
-}
-
-#[derive(Debug)]
-pub struct Unary {
-    pub op: UnaryOpKind,
-    pub operand: Box<Expr>,
-    pub ty: IrTy
+pub struct Return {
+    pub value: Option<Box<Expr>>
 }
 
 #[derive(Debug)]
@@ -146,4 +137,19 @@ pub struct StructGet {
     pub obj: Box<Expr>,
     pub ty: TypeId,
     pub field: u64
+}
+
+#[derive(Debug)]
+pub struct Binary {
+    pub op: BinOpKind,
+    pub left: Box<Expr>,
+    pub right: Box<Expr>,
+    pub ty: IrTy
+}
+
+#[derive(Debug)]
+pub struct Unary {
+    pub op: UnaryOpKind,
+    pub operand: Box<Expr>,
+    pub ty: IrTy
 }
