@@ -27,6 +27,12 @@ impl Parser {
         }
     }
 
+    pub(super) fn parse_block(&mut self) -> Result<Block, ParseError> {
+        let start = self.cur_span().start;
+        let stmts = self.parse_braced_list("statement", |p| p.parse_stmt())?;
+        Ok(Block { stmts, span: self.span_from(start) })
+    }
+
     fn parse_func_decl(&mut self) -> Result<Func, ParseError> {
         let start = self.cur_span().start;
         self.consume(TokenKind::Func)?;

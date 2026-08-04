@@ -18,12 +18,6 @@ impl Parser {
         Expr::Literal(literal, span)
     }
 
-    pub(super) fn parse_block(&mut self) -> Result<Block, ParseError> {
-        let start = self.cur_span().start;
-        let stmts = self.parse_braced_list("statement", |p| p.parse_stmt())?;
-        Ok(Block { stmts, span: self.span_from(start) })
-    }
-
     pub(super) fn parse_identifier(&mut self) -> Result<Identifier, ParseError> {
         match self.peek() {
             TokenKind::Identifier(value) => {
