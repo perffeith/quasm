@@ -12,23 +12,23 @@ struct Counter {
 }
 
 func new(x: Float, y: Float): Point {
-    Point(x, y)
+    return Point(x, y)
 }
 
 func origin(): Point {
-    Point(0.0, 0.0)
+    return Point(0.0, 0.0)
 }
 
 func scale(p: Point, factor: Float): Point {
-    Point(p.x * factor, p.y * factor)
+    return Point(p.x * factor, p.y * factor)
 }
 
 func dot(a: Point, b: Point): Float {
-    a.x * b.x + a.y * b.y
+    return a.x * b.x + a.y * b.y
 }
 
 func double(n: Int): Int {
-    n * 2
+    return n * 2
 }
 
 func main() {
