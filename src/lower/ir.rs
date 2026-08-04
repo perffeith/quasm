@@ -5,13 +5,13 @@
 use crate::common::op::{BinOpKind, UnaryOpKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct LocalId(pub u64);
+pub struct LocalId(pub u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct FuncId(pub u64);
+pub struct FuncId(pub u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct TypeId(pub u64);
+pub struct TypeId(pub u32);
 
 #[derive(Debug)]
 pub struct Module {

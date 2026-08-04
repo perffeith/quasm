@@ -43,7 +43,7 @@ pub struct SymbolTable {
     struct_ids: HashMap<String, StructId>,
     structs: HashMap<StructId, StructSymbol>,
     scopes: Vec<HashMap<String, VarSymbol>>,
-    cur_local_id: u64,
+    cur_local_id: u32,
     cur_ret_ty: Ty
 }
 
@@ -86,7 +86,7 @@ impl SymbolTable {
             return Err(format!("function {signature} is already defined"));
         }
 
-        let id = FuncId(self.funcs.len() as u64);
+        let id = FuncId(self.funcs.len() as u32);
 
         self.funcs.insert(key, FuncSymbol { id, params_ty, ret_ty });
         Ok(())
@@ -127,7 +127,7 @@ impl SymbolTable {
             return Err(format!("struct {name} is already defined"));
         }
 
-        let id = StructId(self.struct_ids.len() as u64);
+        let id = StructId(self.struct_ids.len() as u32);
         self.struct_ids.insert(name.to_string(), id);
         Ok(id)
     }

@@ -216,7 +216,7 @@ impl Sema {
 
         let fields = symbol.fields.values().enumerate()
             .map(|(i, ty)| tast::StructField {
-                id: tast::StructFieldId(i as u64),
+                id: tast::StructFieldId(i as u32),
                 ty: ty.clone()
             }).collect();
 

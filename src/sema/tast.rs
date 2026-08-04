@@ -3,16 +3,16 @@ use crate::common::op::{BinOpKind, UnaryOpKind};
 use crate::sema::ty::Ty;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct FuncId(pub u64);
+pub struct FuncId(pub u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct VarId(pub u64);
+pub struct VarId(pub u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct StructId(pub u64);
+pub struct StructId(pub u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct StructFieldId(pub u64);
+pub struct StructFieldId(pub u32);
 
 #[derive(Debug)]
 pub struct Program {

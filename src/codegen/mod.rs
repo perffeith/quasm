@@ -68,7 +68,7 @@ impl Codegen {
         }
 
         if let Some(entry) = module.entry {
-            self.exports.export("main", ExportKind::Func, entry.0 as u32);
+            self.exports.export("main", ExportKind::Func, entry.0);
         }
 
         // pass 2: emit func bodies
@@ -88,7 +88,6 @@ impl Codegen {
         let params = func.params.iter().map(|param| self.val_ty(param.ty)).collect();
         let results = self.result_tys(func.ret_ty);
         let index = self.func_sig_index(params, results);
-
         self.funcs.function(index);
     }
 
