@@ -43,7 +43,8 @@ pub struct SymbolTable {
     struct_ids: HashMap<String, StructId>,
     structs: HashMap<StructId, StructSymbol>,
     scopes: Vec<HashMap<String, VarSymbol>>,
-    local_id: u64
+    local_id: u64,
+    cur_ret_ty: Ty
 }
 
 impl SymbolTable {
@@ -53,7 +54,8 @@ impl SymbolTable {
             struct_ids: HashMap::new(),
             structs: HashMap::new(),
             scopes: Vec::new(),
-            local_id: 0
+            local_id: 0,
+            cur_ret_ty: Ty::Void
         }
     }
 
@@ -94,13 +96,19 @@ impl SymbolTable {
         self.funcs.get(&FuncKey { name: name.to_string(), first_param_ty })
     }
 
-    pub fn enter_func(&mut self) {
+    pub fn enter_func(&mut self, ret_ty: Ty) {
         self.enter_scope();
         self.local_id = 0;
+        self.cur_ret_ty = ret_ty;
     }
 
     pub fn exit_func(&mut self) {
         self.exit_scope();
+        self.cur_ret_ty = Ty::Void;
+    }
+
+    pub fn cur_ret_ty(&self) -> &Ty {
+        &self.cur_ret_ty
     }
 
     fn alloc_local_id(&mut self) -> VarId {

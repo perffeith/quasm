@@ -187,7 +187,7 @@ impl Sema {
         let ret_ty = func_symbol.ret_ty.clone();
 
         // enter func and build params
-        self.sym_table.enter_func();
+        self.sym_table.enter_func(ret_ty.clone());
         let mut params = Vec::new();
         for (param, ty) in func.params.iter().zip(params_ty) {
             let id = self.sym_table.define_var(&param.name.value, ty.clone())
@@ -196,13 +196,15 @@ impl Sema {
         }
 
         // build body
-        let body_span = func.body.span;
         let body = self.check_block(func.body)?;
         self.sym_table.exit_func();
 
-        self.expect_eq(&ret_ty, &body.ty, body_span, || {
-            format!("type mismatch for function `{}` return type", name)
-        })?;
+        if ret_ty != Ty::Void && !body.always_returns() {
+            return Err(self.err(
+                format!("function `{}` must return on all paths", name),
+                func.name.span
+            ));
+        }
 
         Ok(tast::Func { id, params, ret_ty, body })
     }
@@ -241,8 +243,23 @@ impl Sema {
         Ok(tast::Let { id, value, value_ty, ty: Ty::Void })
     }
 
-    fn check_return(&mut self, _ret: ast::Return) -> Result<tast::Return, SemaError> {
-        todo!("check return")
+    fn check_return(&mut self, ret: ast::Return) -> Result<tast::Return, SemaError> {
+        let ret_ty = self.sym_table.cur_ret_ty().clone();
+        match ret.value {
+            Some(value) => {
+                let value = self.check_expr(value)?;
+                self.expect_eq(&ret_ty, value.ty(), ret.span, || {
+                    "type mismatch in return".to_string()
+                })?;
+                Ok(tast::Return { value: Some(value), ty: Ty::Void })
+            }
+            None => {
+                self.expect_eq(&ret_ty, &Ty::Void, ret.span, || {
+                    "return without a value".to_string()
+                })?;
+                Ok(tast::Return { value: None, ty: Ty::Void })
+            }
+        }
     }
 
     fn check_if(&mut self, if_stmt: ast::If) -> Result<tast::If, SemaError> {
@@ -327,18 +344,18 @@ impl Sema {
     fn check_block(&mut self, block: ast::Block) -> Result<tast::Block, SemaError> {
         self.sym_table.enter_scope();
         let mut stmts = Vec::new();
+        let mut diverged = false;
         for stmt in block.stmts {
-            stmts.push(self.check_stmt(stmt)?);
+            if diverged {
+                return Err(self.err("unreachable code", stmt.span()));
+            }
+            let stmt = self.check_stmt(stmt)?;
+            diverged = stmt.always_returns();
+            stmts.push(stmt);
         }
         self.sym_table.exit_scope();
 
-        // a block evaluates to its trailing statement, otherwise to void
-        let ty = match stmts.last() {
-            Some(tast::Stmt::Expr(expr)) => expr.ty().clone(),
-            _ => Ty::Void
-        };
-
-        Ok(tast::Block { stmts, ty })
+        Ok(tast::Block { stmts, ty: Ty::Void })
     }
 
     fn check_binaryop(&mut self, binaryop: ast::BinaryOp) -> Result<tast::BinaryOp, SemaError> {

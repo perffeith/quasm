@@ -32,6 +32,25 @@ pub enum Stmt {
     Expr(Expr)
 }
 
+impl Stmt {
+    // whether control flow always leaves this statement via a return
+    pub fn always_returns(&self) -> bool {
+        match self {
+            Stmt::Return(_) => true,
+            Stmt::Block(block) => block.always_returns(),
+            Stmt::If(if_stmt) => {
+                let Some(else_block) = &if_stmt.else_block else {
+                    return false;
+                };
+                if_stmt.then_block.always_returns()
+                    && if_stmt.elifs.iter().all(|elif| elif.then_block.always_returns())
+                    && else_block.always_returns()
+            }
+            _ => false
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Func {
     pub id: FuncId,
@@ -144,6 +163,13 @@ pub struct VarRef {
 pub struct Block {
     pub stmts: Vec<Stmt>,
     pub ty: Ty
+}
+
+impl Block {
+    // whether control flow always leaves this block via a return
+    pub fn always_returns(&self) -> bool {
+        self.stmts.iter().any(Stmt::always_returns)
+    }
 }
 
 #[derive(Debug)]
