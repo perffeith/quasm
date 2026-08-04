@@ -43,7 +43,7 @@ pub struct SymbolTable {
     struct_ids: HashMap<String, StructId>,
     structs: HashMap<StructId, StructSymbol>,
     scopes: Vec<HashMap<String, VarSymbol>>,
-    local_id: u64,
+    cur_local_id: u64,
     cur_ret_ty: Ty
 }
 
@@ -54,7 +54,7 @@ impl SymbolTable {
             struct_ids: HashMap::new(),
             structs: HashMap::new(),
             scopes: Vec::new(),
-            local_id: 0,
+            cur_local_id: 0,
             cur_ret_ty: Ty::Void
         }
     }
@@ -62,7 +62,7 @@ impl SymbolTable {
     pub fn enter_scope(&mut self) {
         self.scopes.push(HashMap::new())
     }
-    
+
     pub fn exit_scope(&mut self) {
         self.scopes.pop();
     }
@@ -98,7 +98,7 @@ impl SymbolTable {
 
     pub fn enter_func(&mut self, ret_ty: Ty) {
         self.enter_scope();
-        self.local_id = 0;
+        self.cur_local_id = 0;
         self.cur_ret_ty = ret_ty;
     }
 
@@ -112,8 +112,8 @@ impl SymbolTable {
     }
 
     fn alloc_local_id(&mut self) -> VarId {
-        let id = VarId(self.local_id);
-        self.local_id += 1;
+        let id = VarId(self.cur_local_id);
+        self.cur_local_id += 1;
         id
     }
 
@@ -155,7 +155,7 @@ impl SymbolTable {
     pub fn lookup_struct(&self, name: &str) -> Option<&StructSymbol> {
         self.structs.get(&self.lookup_struct_id(name)?)
     }
-    
+
     // ----Variable related stuffs----
     pub fn define_var(&mut self, name: &str, ty: Ty) -> Result<VarId, String> {
         if !is_snake_case(name) {
