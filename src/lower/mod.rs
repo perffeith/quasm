@@ -51,11 +51,6 @@ impl Lower {
         }
     }
 
-    fn lower_block(&mut self, block: &tast::Block) -> ir::Expr {
-        let exprs = block.stmts.iter().map(|stmt| self.lower_stmt(stmt)).collect();
-        ir::Expr::Block(ir::Block { exprs, ty: self.lower_ty(&block.ty) })
-    }
-
     fn lower_func_decl(&mut self, func: &tast::Func) -> ir::Func {
         self.locals.clear();
 
@@ -74,11 +69,16 @@ impl Lower {
         }
     }
 
+    fn lower_block(&mut self, block: &tast::Block) -> ir::Block {
+        let exprs = block.stmts.iter().map(|stmt| self.lower_stmt(stmt)).collect();
+        ir::Block { exprs, ty: self.lower_ty(&block.ty) }
+    }
+
     fn lower_stmt(&mut self, stmt: &tast::Stmt) -> ir::Expr {
         match stmt {
             tast::Stmt::Let(let_stmt) => self.lower_local_decl(let_stmt.id, &let_stmt.value_ty, &let_stmt.value),
             tast::Stmt::Return(_) => todo!("return"),
-            tast::Stmt::If(_) => todo!("if"),
+            tast::Stmt::If(if_stmt) => ir::Expr::If(self.lower_if(if_stmt)),
             tast::Stmt::Assign(assign) => {
                 let value = self.lower_expr(&assign.value);
                 ir::Expr::LocalSet(ir::LocalSet { id: ir::LocalId(assign.id.0), value: Box::new(value) })
@@ -87,6 +87,24 @@ impl Lower {
             tast::Stmt::Func(_) => unreachable!("nested functions"),
             tast::Stmt::Struct(_) => unreachable!("nested structs")
         }
+    }
+
+    fn lower_if(&mut self, if_stmt: &tast::If) -> ir::If {
+        let ty = self.lower_ty(&if_stmt.ty);
+
+        // Desugar the elif chain into nested ifs, built from the back
+        let mut else_block: Option<Box<ir::Expr>> = if_stmt.else_block.as_ref()
+            .map(|block| Box::new(ir::Expr::Block(self.lower_block(block))));
+
+        for elif in if_stmt.elifs.iter().rev() {
+            let condition = Box::new(self.lower_expr(&elif.condition));
+            let then_block = Box::new(self.lower_block(&elif.then_block));
+            else_block = Some(Box::new(ir::Expr::If(ir::If { condition, then_block, else_block, ty })));
+        }
+
+        let condition = Box::new(self.lower_expr(&if_stmt.condition));
+        let then_block = Box::new(self.lower_block(&if_stmt.then_block));
+        ir::If { condition, then_block, else_block, ty }
     }
 
     fn lower_local_decl(&mut self, id: tast::VarId, value_ty: &Ty, value: &tast::Expr) -> ir::Expr {
@@ -107,7 +125,7 @@ impl Lower {
                 ir::Expr::LocalGet(ir::LocalGet { id: ir::LocalId(var_ref.id.0), ty: self.lower_ty(&var_ref.ty) })
             }
             tast::Expr::FuncRef(func_ref) => ir::Expr::FuncRef(ir::FuncId(func_ref.id.0)),
-            tast::Expr::Block(block) => self.lower_block(block),
+            tast::Expr::Block(block) => ir::Expr::Block(self.lower_block(block)),
             tast::Expr::BinaryOp(binop) => {
                 let ty = self.lower_ty(&binop.ty);
                 let left = self.lower_expr(&binop.left);

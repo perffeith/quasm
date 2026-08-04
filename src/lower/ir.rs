@@ -39,7 +39,7 @@ pub struct Func {
     pub params: Vec<Param>,
     pub locals: Vec<IrTy>,
     pub ret_ty: IrTy,
-    pub body: Expr
+    pub body: Block
 }
 
 #[derive(Debug)]
@@ -59,6 +59,7 @@ pub enum Expr {
     Binary(Binary),
     Unary(Unary),
     Block(Block),
+    If(If),
     Call(Call),
     FuncRef(FuncId),
     StructNew(StructNew),
@@ -76,6 +77,7 @@ impl Expr {
             Expr::Binary(e) => e.ty,
             Expr::Unary(e) => e.ty,
             Expr::Block(e) => e.ty,
+            Expr::If(e) => e.ty,
             Expr::Call(e) => e.ty,
             // ref/heap types aren't modeled by IrTy yet
             Expr::FuncRef(_) | Expr::StructNew(_) | Expr::StructGet(_) =>
@@ -114,6 +116,15 @@ pub struct Unary {
 #[derive(Debug)]
 pub struct Block {
     pub exprs: Vec<Expr>,
+    pub ty: IrTy
+}
+
+#[derive(Debug)]
+pub struct If {
+    pub condition: Box<Expr>,
+    pub then_block: Box<Block>,
+    // else is a Block, or a nested If for an elif branch
+    pub else_block: Option<Box<Expr>>,
     pub ty: IrTy
 }
 
