@@ -61,5 +61,10 @@ fn main() {
     let ir = lower::lower(tast);
     if args.debug { write_debug("ir.txt", &format!("{:#?}", ir)); }
 
-    let _wasm = codegen::emit(ir);
+    let wasm = codegen::emit(ir);
+    fs::create_dir_all("build").and_then(|_| fs::write("build/out.wasm", wasm))
+        .unwrap_or_else(|e| {
+            eprintln!("error writing wasm: {}", e);
+            std::process::exit(1);
+        });
 }
