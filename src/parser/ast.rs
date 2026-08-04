@@ -16,6 +16,7 @@ pub enum Stmt {
     Return(Return),
     If(If),
     Assign(Assign),
+    Block(Block),
     Expr(Expr)
 }
 
@@ -29,6 +30,7 @@ impl Stmt {
             Stmt::Return(s) => s.span,
             Stmt::If(s) => s.span,
             Stmt::Assign(s) => s.span,
+            Stmt::Block(b) => b.span,
             Stmt::Expr(e) => e.span()
         }
     }
@@ -120,7 +122,6 @@ pub enum Expr {
     Literal(Literal, Span),
     Identifier(Identifier),
     Array(Vec<Expr>, Span),
-    Block(Block),
     BinaryOp(BinaryOp),
     UnaryOp(UnaryOp),
     Call(Call),
@@ -139,7 +140,6 @@ impl Expr {
             Expr::Literal(_, span) => *span,
             Expr::Identifier(ident) => ident.span,
             Expr::Array(_, span) => *span,
-            Expr::Block(block) => block.span,
             Expr::BinaryOp(e) => e.span,
             Expr::UnaryOp(e) => e.span,
             Expr::Call(e) => e.span,

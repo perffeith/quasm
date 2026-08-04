@@ -105,6 +105,9 @@ impl Sema {
                 ast::Stmt::If(s) => {
                     return Err(self.err("top level should not contain if statement", s.condition.span()));
                 }
+                ast::Stmt::Block(s) => {
+                    return Err(self.err("top level should not contain a block", s.span));
+                }
                 ast::Stmt::Enum(s) => {
                     return Err(self.err("not implemented yet", s.name.span));
                 }
@@ -163,6 +166,7 @@ impl Sema {
                 Err(self.err("not implemented yet", type_stmt.name.span))
             }
             ast::Stmt::If(if_stmt) => Ok(tast::Stmt::If(self.check_if(if_stmt)?)),
+            ast::Stmt::Block(block) => Ok(tast::Stmt::Block(self.check_block(block)?)),
             ast::Stmt::Expr(expr) => Ok(tast::Stmt::Expr(self.check_expr(expr)?))
         }
     }
@@ -302,9 +306,6 @@ impl Sema {
                     Literal::Bool(_) => Ty::Bool
                 };
                 Ok(tast::Expr::Literal(lit, ty))
-            }
-            ast::Expr::Block(block) => {
-                Ok(tast::Expr::Block(self.check_block(block)?))
             }
             ast::Expr::Identifier(identifier) => {
                 let Some(var_symbol) = self.sym_table.lookup_var(&identifier.value) else {

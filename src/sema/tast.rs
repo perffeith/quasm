@@ -28,6 +28,7 @@ pub enum Stmt {
     Return(Return),
     If(If),
     Assign(Assign),
+    Block(Block),
     Expr(Expr)
 }
 
@@ -106,7 +107,6 @@ pub enum Expr {
     Literal(Literal, Ty),
     FuncRef(FuncRef),
     VarRef(VarRef),
-    Block(Block),
     BinaryOp(BinaryOp),
     UnaryOp(UnaryOp),
     Call(Call),
@@ -119,7 +119,6 @@ impl Expr {
             Expr::Literal(_, ty) => ty,
             Expr::FuncRef(e) => &e.ty,
             Expr::VarRef(e) => &e.ty,
-            Expr::Block(e) => &e.ty,
             Expr::BinaryOp(e) => &e.ty,
             Expr::UnaryOp(e) => &e.ty,
             Expr::Call(e) => &e.ty,

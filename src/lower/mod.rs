@@ -79,6 +79,7 @@ impl Lower {
             tast::Stmt::Let(let_stmt) => self.lower_local_decl(let_stmt.id, &let_stmt.value_ty, &let_stmt.value),
             tast::Stmt::Return(_) => todo!("return"),
             tast::Stmt::If(if_stmt) => ir::Expr::If(self.lower_if(if_stmt)),
+            tast::Stmt::Block(block) => ir::Expr::Block(self.lower_block(block)),
             tast::Stmt::Assign(assign) => {
                 let value = self.lower_expr(&assign.value);
                 ir::Expr::LocalSet(ir::LocalSet { id: ir::LocalId(assign.id.0), value: Box::new(value) })
@@ -125,7 +126,6 @@ impl Lower {
                 ir::Expr::LocalGet(ir::LocalGet { id: ir::LocalId(var_ref.id.0), ty: self.lower_ty(&var_ref.ty) })
             }
             tast::Expr::FuncRef(func_ref) => ir::Expr::FuncRef(ir::FuncId(func_ref.id.0)),
-            tast::Expr::Block(block) => ir::Expr::Block(self.lower_block(block)),
             tast::Expr::BinaryOp(binop) => {
                 let ty = self.lower_ty(&binop.ty);
                 let left = self.lower_expr(&binop.left);

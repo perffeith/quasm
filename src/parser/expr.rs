@@ -213,9 +213,6 @@ impl Parser {
                 let elems = self.parse_comma_list(TokenKind::LBracket, TokenKind::RBracket, "element", |p| p.parse_expr())?;
                 Ok(Expr::Array(elems, self.span_from(start)))
             }
-            TokenKind::LBrace => {
-                Ok(Expr::Block(self.parse_block()?))
-            }
             TokenKind::VerBar | TokenKind::Or => {
                 self.parse_closure()
             }

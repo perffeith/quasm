@@ -12,6 +12,7 @@ impl Parser {
             TokenKind::Let => Ok(Stmt::Let(self.parse_let_stmt()?)),
             TokenKind::Return => Ok(Stmt::Return(self.parse_return()?)),
             TokenKind::If => Ok(Stmt::If(self.parse_if_stmt()?)),
+            TokenKind::LBrace => Ok(Stmt::Block(self.parse_block()?)),
             _ => {
                 let expr = self.parse_expr()?;
                 if self.peek_is(TokenKind::Eq) {
