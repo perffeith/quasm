@@ -72,7 +72,7 @@ impl Codegen {
         }
 
         // pass 2: emit func bodies
-        for func in &module.funcs {
+        for func in module.funcs {
             self.emit_func(func);
         }
 
@@ -91,14 +91,29 @@ impl Codegen {
         self.funcs.function(index);
     }
 
-    fn emit_func(&mut self, _func: &ir::Func) {
-        // for expr in &func.body.exprs {
+    fn emit_func(&mut self, func: ir::Func) {
+        let locals: Vec<ValType> = func.locals.iter().map(|ty| self.val_ty(*ty)).collect();
+        let mut func_body = Function::new_with_locals_types(locals);
 
-        // }
-        // todo: lower func.body.exprs into instructions
-        let mut body = Function::new([]);
-        body.instruction(&Instruction::Unreachable);
-        body.instruction(&Instruction::End);
-        self.code.function(&body);
+        for expr in func.body.exprs {
+            self.emit_expr(&mut func_body, expr);
+        }
+
+        // body.instruction(&Instruction::Unreachable);
+        func_body.instruction(&Instruction::End);
+        self.code.function(&func_body);
+    }
+
+    fn emit_expr(&mut self, body: &mut Function, expr: ir::Expr) {
+        match expr {
+            ir::Expr::ConstInt(val) => {
+                body.instruction(&Instruction::I64Const(val));
+            }
+            ir::Expr::LocalSet(set) => {
+                self.emit_expr(body, *set.value);
+                body.instruction(&Instruction::LocalSet(set.id.0));
+            }
+            e => todo!("codegen for {:?}", e)
+        }
     }
 }
