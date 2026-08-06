@@ -1,3 +1,5 @@
+pub mod op;
+
 use std::collections::HashMap;
 use wasm_encoder::{
     CodeSection,
@@ -12,6 +14,7 @@ use wasm_encoder::{
 };
 use crate::lower::ir;
 use crate::lower::ir::IrTy;
+use op::bin_op;
 
 pub struct Codegen {
     types: TypeSection,
@@ -96,22 +99,53 @@ impl Codegen {
         let mut func_body = Function::new_with_locals_types(locals);
 
         for expr in func.body.exprs {
-            self.emit_expr(&mut func_body, expr);
+            self.emit_stmt(&mut func_body, expr);
         }
 
-        // body.instruction(&Instruction::Unreachable);
+        // if func.ret_ty != IrTy::Void {
+        //     func_body.instruction(&Instruction::Unreachable);
+        // }
         func_body.instruction(&Instruction::End);
         self.code.function(&func_body);
     }
 
+    fn emit_stmt(&mut self, body: &mut Function, expr: ir::Expr) {
+        let ty = expr.ty();
+        self.emit_expr(body, expr);
+        if ty != IrTy::Void {
+            body.instruction(&Instruction::Drop);
+        }
+    }
+
     fn emit_expr(&mut self, body: &mut Function, expr: ir::Expr) {
         match expr {
-            ir::Expr::ConstInt(val) => {
-                body.instruction(&Instruction::I64Const(val));
+            ir::Expr::ConstInt(value) => {
+                body.instruction(&Instruction::I64Const(value));
+            }
+            ir::Expr::LocalGet(get) => {
+                body.instruction(&Instruction::LocalGet(get.id.0));
             }
             ir::Expr::LocalSet(set) => {
                 self.emit_expr(body, *set.value);
                 body.instruction(&Instruction::LocalSet(set.id.0));
+            }
+            ir::Expr::Return(ret) => {
+                if let Some(value) = ret.value {
+                    self.emit_expr(body, *value);
+                }
+                body.instruction(&Instruction::Return);
+            }
+            ir::Expr::Call(call) => {
+                for arg in call.args {
+                    self.emit_expr(body, arg);
+                }
+                body.instruction(&Instruction::Call(call.func.0));
+            }
+            ir::Expr::Binary(binary) => {
+                let operand_ty = binary.left.ty();
+                self.emit_expr(body, *binary.left);
+                self.emit_expr(body, *binary.right);
+                body.instruction(&bin_op(binary.op, operand_ty));
             }
             e => todo!("codegen for {:?}", e)
         }

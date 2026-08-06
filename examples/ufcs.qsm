@@ -33,22 +33,22 @@ func double(n: Int): Int {
 
 func main() {
     // Type.f(args) is just f(args)
-    let p = Point.new(3.0, 4.0)
-    let o = Point.origin()
+    local p = Point.new(3.0, 4.0)
+    local o = Point.origin()
 
     // value.f(args) is f(value, args)
-    let doubled = scale(p, 2.0)
-    let same = p.scale(2.0)
+    local doubled = scale(p, 2.0)
+    local same = p.scale(2.0)
 
-    let d = p.dot(o)
+    local d = p.dot(o)
 
-    let chained = p.scale(2.0).dot(o)
+    local chained = p.scale(2.0).dot(o)
 
-    let four = 2.double()
+    local four = 2.double()
 
     // bare dot is always plain field access
-    let x = p.x
+    local x = p.x
 
-    let c = Counter(0, |n| => n + 1)
-    let next = (c.step)(c.count)
+    local c = Counter(0, |n| => n + 1)
+    local next = (c.step)(c.count)
 }

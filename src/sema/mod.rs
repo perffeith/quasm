@@ -96,8 +96,8 @@ impl Sema {
                 ast::Stmt::Return(ret) => {
                     return Err(self.err("top level should not contain return", ret.span));
                 }
-                ast::Stmt::Let(s) => {
-                    return Err(self.err("top level should not contain let statement", s.name.span));
+                ast::Stmt::Local(s) => {
+                    return Err(self.err("top level should not contain local statement", s.name.span));
                 }
                 ast::Stmt::Assign(s) => {
                     return Err(self.err("top level should not contain assignment", s.target.span()));
@@ -160,7 +160,7 @@ impl Sema {
             ast::Stmt::Func(func) => Ok(tast::Stmt::Func(self.check_func_decl(func)?)),
             ast::Stmt::Return(ret) => Ok(tast::Stmt::Return(self.check_return(ret)?)),
             ast::Stmt::Struct(struc) => Ok(tast::Stmt::Struct(self.check_struct_decl(struc)?)),
-            ast::Stmt::Let(let_stmt) => Ok(tast::Stmt::Let(self.check_let(let_stmt)?)),
+            ast::Stmt::Local(local) => Ok(tast::Stmt::Local(self.check_local_decl(local)?)),
             ast::Stmt::Assign(assign) => Ok(tast::Stmt::Assign(self.check_assign(assign)?)),
             ast::Stmt::Enum(type_stmt) => {
                 Err(self.err("not implemented yet", type_stmt.name.span))
@@ -223,24 +223,24 @@ impl Sema {
         Ok(tast::Struct { id, fields, ty: Ty::Void })
     }
 
-    fn check_let(&mut self, let_stmt: ast::Let) -> Result<tast::Let, SemaError> {
-        let value = self.check_expr(let_stmt.value)?;
+    fn check_local_decl(&mut self, local: ast::Local) -> Result<tast::Local, SemaError> {
+        let value = self.check_expr(local.value)?;
 
-        let value_ty = match &let_stmt.annot_ty {
+        let value_ty = match &local.annot_ty {
             Some(annot) => {
                 let annot_ty = self.resolve_ty(annot)?;
-                self.expect_eq(&annot_ty, value.ty(), let_stmt.name.span, || {
-                    format!("type mismatch for `{}`", let_stmt.name.value)
+                self.expect_eq(&annot_ty, value.ty(), local.name.span, || {
+                    format!("type mismatch for `{}`", local.name.value)
                 })?;
                 annot_ty
             }
             None => value.ty().clone()
         };
 
-        let id = self.sym_table.define_var(&let_stmt.name.value, value_ty.clone())
-            .map_err(|msg| self.err(msg, let_stmt.name.span))?;
+        let id = self.sym_table.define_var(&local.name.value, value_ty.clone())
+            .map_err(|msg| self.err(msg, local.name.span))?;
 
-        Ok(tast::Let { id, value, value_ty, ty: Ty::Void })
+        Ok(tast::Local { id, value, value_ty, ty: Ty::Void })
     }
 
     fn check_return(&mut self, ret: ast::Return) -> Result<tast::Return, SemaError> {

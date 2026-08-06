@@ -53,7 +53,7 @@ impl Lower {
 
     fn lower_stmt(&mut self, stmt: &tast::Stmt) -> ir::Expr {
         match stmt {
-            tast::Stmt::Let(let_stmt) => self.lower_local_decl(let_stmt.id, &let_stmt.value_ty, &let_stmt.value),
+            tast::Stmt::Local(local) => self.lower_local_decl(local.id, &local.value_ty, &local.value),
             tast::Stmt::Return(ret) => ir::Expr::Return(self.lower_return(ret)),
             tast::Stmt::If(if_stmt) => ir::Expr::If(self.lower_if(if_stmt)),
             tast::Stmt::Block(block) => ir::Expr::Block(self.lower_block(block)),

@@ -24,7 +24,7 @@ pub struct Program {
 pub enum Stmt {
     Func(Func),
     Struct(Struct),
-    Let(Let),
+    Local(Local),
     Return(Return),
     If(If),
     Assign(Assign),
@@ -86,7 +86,7 @@ pub struct StructLit {
 }
 
 #[derive(Debug)]
-pub struct Let {
+pub struct Local {
     pub id: VarId,
     pub value: Expr,
     pub value_ty: Ty,

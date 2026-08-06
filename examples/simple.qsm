@@ -1,5 +1,5 @@
 func main() {
-    let result = add(12, 28)
+    local result = add(12, 28)
     // print(result)
 }
 

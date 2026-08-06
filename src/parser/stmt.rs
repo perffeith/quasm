@@ -9,9 +9,9 @@ impl Parser {
             TokenKind::Func => Ok(Stmt::Func(self.parse_func_decl()?)),
             TokenKind::Struct => Ok(Stmt::Struct(self.parse_struct_decl()?)),
             TokenKind::Enum => Ok(Stmt::Enum(self.parse_enum_decl()?)),
-            TokenKind::Let => Ok(Stmt::Let(self.parse_let_stmt()?)),
+            TokenKind::Local => Ok(Stmt::Local(self.parse_local_decl()?)),
             TokenKind::Return => Ok(Stmt::Return(self.parse_return()?)),
-            TokenKind::If => Ok(Stmt::If(self.parse_if_stmt()?)),
+            TokenKind::If => Ok(Stmt::If(self.parse_if()?)),
             TokenKind::LBrace => Ok(Stmt::Block(self.parse_block()?)),
             _ => {
                 let expr = self.parse_expr()?;
@@ -42,7 +42,7 @@ impl Parser {
         let body = self.parse_block()?;
         Ok(Func { name, params, ret, body, span: self.span_from(start) })
     }
-    
+
     fn parse_func_params(&mut self) -> Result<Vec<Param>, ParseError> {
         self.parse_comma_list(TokenKind::LParen, TokenKind::RParen, "parameter", |p| {
             let param = p.parse_param()?;
@@ -68,7 +68,7 @@ impl Parser {
         let ty = self.parse_type()?;
         Ok(StructField { name, ty, span: self.span_from(start) })
     }
-    
+
     fn parse_enum_decl(&mut self) -> Result<Enum, ParseError> {
         let start = self.cur_span().start;
         self.consume(TokenKind::Enum)?;
@@ -90,14 +90,14 @@ impl Parser {
         Ok(EnumVariant { name, ty_fields, span: self.span_from(start) })
     }
 
-    fn parse_let_stmt(&mut self) -> Result<Let, ParseError> {
+    fn parse_local_decl(&mut self) -> Result<Local, ParseError> {
         let start = self.cur_span().start;
-        self.consume(TokenKind::Let)?;
+        self.consume(TokenKind::Local)?;
         let name = self.parse_identifier()?;
         let annot_ty = self.parse_type_annotation()?;
         self.consume(TokenKind::Eq)?;
         let value = self.parse_expr()?;
-        Ok(Let { name, annot_ty, value, span: self.span_from(start) })
+        Ok(Local { name, annot_ty, value, span: self.span_from(start) })
     }
 
     fn parse_return(&mut self) -> Result<Return, ParseError> {
@@ -117,7 +117,7 @@ impl Parser {
         Ok(Return { value, span })
     }
 
-    fn parse_if_stmt(&mut self) -> Result<If, ParseError> {
+    fn parse_if(&mut self) -> Result<If, ParseError> {
         let start = self.cur_span().start;
         self.consume(TokenKind::If)?;
         let condition = self.parse_expr()?;

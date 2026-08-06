@@ -12,7 +12,7 @@ pub enum Stmt {
     Func(Func),
     Struct(Struct),
     Enum(Enum),
-    Let(Let),
+    Local(Local),
     Return(Return),
     If(If),
     Assign(Assign),
@@ -26,7 +26,7 @@ impl Stmt {
             Stmt::Func(s) => s.span,
             Stmt::Struct(s) => s.span,
             Stmt::Enum(s) => s.span,
-            Stmt::Let(s) => s.span,
+            Stmt::Local(s) => s.span,
             Stmt::Return(s) => s.span,
             Stmt::If(s) => s.span,
             Stmt::Assign(s) => s.span,
@@ -81,7 +81,7 @@ pub struct EnumVariant {
 }
 
 #[derive(Debug)]
-pub struct Let {
+pub struct Local {
     pub name: Identifier,
     pub value: Expr,
     pub annot_ty: Option<Ty>,
