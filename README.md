@@ -1,8 +1,8 @@
-# Wazy
+# Watix
 
-Wazy is a programming language that compile to WebAssembly (WASM). It aims to make writing WASM module simpler and thus provide a simple syntax.
+Watix is a programming language that compile to WebAssembly (WASM). It aims to make writing WASM module simpler and thus provide a simple syntax.
 
-**Wazy is personal "for fun" project** [![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
+**Watix is personal "for fun" project** [![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
 
 ```
 func main() {

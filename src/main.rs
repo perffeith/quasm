@@ -1,5 +1,5 @@
 use clap::Parser as ClapParser;
-use wazy::{lexer, parser, sema, lower, codegen};
+use watix::{lexer, parser, sema, lower, codegen};
 use std::{fs, path::PathBuf};
 
 #[derive(ClapParser)]

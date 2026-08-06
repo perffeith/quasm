@@ -295,7 +295,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wazy"
+name = "watix"
 version = "0.1.0"
 dependencies = [
  "clap",
