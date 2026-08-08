@@ -295,7 +295,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "watix"
+name = "wazi"
 version = "0.1.0"
 dependencies = [
  "clap",
