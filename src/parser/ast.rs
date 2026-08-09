@@ -9,6 +9,7 @@ pub struct Program {
 
 #[derive(Debug)]
 pub enum Stmt {
+    ExternFunc(ExternFunc),
     Func(Func),
     Struct(Struct),
     Enum(Enum),
@@ -23,6 +24,7 @@ pub enum Stmt {
 impl Stmt {
     pub fn span(&self) -> Span {
         match self {
+            Stmt::ExternFunc(s) => s.span,
             Stmt::Func(s) => s.span,
             Stmt::Struct(s) => s.span,
             Stmt::Enum(s) => s.span,
@@ -34,6 +36,16 @@ impl Stmt {
             Stmt::Expr(e) => e.span()
         }
     }
+}
+
+#[derive(Debug)]
+pub struct ExternFunc {
+    pub module: Identifier,
+    pub symbol: Identifier,
+    pub name: Identifier,
+    pub params: Vec<Param>,
+    pub ret: Option<Ty>,
+    pub span: Span
 }
 
 #[derive(Debug)]

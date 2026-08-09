@@ -6,6 +6,7 @@ use super::ParseError;
 impl Parser {
     pub(super) fn parse_stmt(&mut self) -> Result<Stmt, ParseError> {
         match self.peek() {
+            TokenKind::Extern => Ok(Stmt::ExternFunc(self.parse_extern_func_decl()?)),
             TokenKind::Func => Ok(Stmt::Func(self.parse_func_decl()?)),
             TokenKind::Struct => Ok(Stmt::Struct(self.parse_struct_decl()?)),
             TokenKind::Enum => Ok(Stmt::Enum(self.parse_enum_decl()?)),
@@ -33,14 +34,36 @@ impl Parser {
         Ok(Block { stmts, span: self.span_from(start) })
     }
 
+    fn parse_extern_func_decl(&mut self) -> Result<ExternFunc, ParseError> {
+        let start = self.cur_span().start;
+        self.consume(TokenKind::Extern)?;
+        let module = self.parse_identifier()?;
+        self.consume(TokenKind::Slash)?;
+        let symbol = self.parse_identifier()?;
+
+        self.expect_newline("extern path")?;
+        let (name, params, ret) = self.parse_func_sig()?;
+
+        if self.peek_is(TokenKind::LBrace) {
+            return Err(self.err("extern function cannot have a body"));
+        }
+
+        Ok(ExternFunc { module, symbol, name, params, ret, span: self.span_from(start) })
+    }
+
     fn parse_func_decl(&mut self) -> Result<Func, ParseError> {
         let start = self.cur_span().start;
+        let (name, params, ret) = self.parse_func_sig()?;
+        let body = self.parse_block()?;
+        Ok(Func { name, params, ret, body, span: self.span_from(start) })
+    }
+
+    fn parse_func_sig(&mut self) -> Result<(Identifier, Vec<Param>, Option<Ty>), ParseError> {
         self.consume(TokenKind::Func)?;
         let name = self.parse_identifier()?;
         let params = self.parse_func_params()?;
         let ret = self.parse_type_annotation()?;
-        let body = self.parse_block()?;
-        Ok(Func { name, params, ret, body, span: self.span_from(start) })
+        Ok((name, params, ret))
     }
 
     fn parse_func_params(&mut self) -> Result<Vec<Param>, ParseError> {

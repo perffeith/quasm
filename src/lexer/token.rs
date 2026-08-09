@@ -5,6 +5,7 @@ use logos::Logos;
 #[logos(skip r"[ \t\r\f]+")]
 #[logos(skip(r"//[^\r\n]*", allow_greedy = true))]
 pub enum TokenKind {
+    #[token("extern")] Extern,
     #[token("func")] Func,
     #[token("struct")] Struct,
     #[token("enum")] Enum,

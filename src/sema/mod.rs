@@ -88,6 +88,7 @@ impl Sema {
         // pass 1: register struct names, reject invalid top level statements
         for stmt in &ast.stmts {
             match stmt {
+                ast::Stmt::ExternFunc(_) => {}
                 ast::Stmt::Func(_) => {}
                 ast::Stmt::Struct(struc) => {
                     self.sym_table.define_struct(&struc.name.value)
@@ -157,6 +158,9 @@ impl Sema {
 
     fn check_stmt(&mut self, stmt: ast::Stmt) -> Result<tast::Stmt, SemaError> {
         match stmt {
+            ast::Stmt::ExternFunc(extern_func) => {
+                Err(self.err("not implemented yet", extern_func.span))
+            }
             ast::Stmt::Func(func) => Ok(tast::Stmt::Func(self.check_func_decl(func)?)),
             ast::Stmt::Return(ret) => Ok(tast::Stmt::Return(self.check_return(ret)?)),
             ast::Stmt::Struct(struc) => Ok(tast::Stmt::Struct(self.check_struct_decl(struc)?)),
