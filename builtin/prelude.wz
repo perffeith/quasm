@@ -1,0 +1,5 @@
+@extern env/__print_i64
+function print(value: Int)
+
+@extern env/__print_f64
+function print(value: Float
