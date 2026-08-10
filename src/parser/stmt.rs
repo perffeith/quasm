@@ -4,10 +4,18 @@ use super::Parser;
 use super::ParseError;
 
 impl Parser {
-    pub(super) fn parse_stmt(&mut self) -> Result<Stmt, ParseError> {
+    pub(super) fn parse_top_level_stmt(&mut self) -> Result<Stmt, ParseError> {
         match self.peek() {
             TokenKind::Extern => Ok(Stmt::ExternFunc(self.parse_extern_func_decl()?)),
             TokenKind::Func => Ok(Stmt::Func(self.parse_func_decl()?)),
+            _ => self.parse_stmt()
+        }
+    }
+
+    pub(super) fn parse_stmt(&mut self) -> Result<Stmt, ParseError> {
+        match self.peek() {
+            TokenKind::Extern => Err(self.err("extern declarations are only allowed at top level")),
+            TokenKind::Func => Err(self.err("nested function declarations are not allowed")),
             TokenKind::Struct => Ok(Stmt::Struct(self.parse_struct_decl()?)),
             TokenKind::Enum => Ok(Stmt::Enum(self.parse_enum_decl()?)),
             TokenKind::Local => Ok(Stmt::Local(self.parse_local_decl()?)),
