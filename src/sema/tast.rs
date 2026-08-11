@@ -22,6 +22,7 @@ pub struct Program {
 
 #[derive(Debug)]
 pub enum Stmt {
+    ExternFunc(ExternFunc),
     Func(Func),
     Struct(Struct),
     Local(Local),
@@ -49,6 +50,15 @@ impl Stmt {
             _ => false
         }
     }
+}
+
+#[derive(Debug)]
+pub struct ExternFunc {
+    pub id: FuncId,
+    pub module: String,
+    pub item: String,
+    pub params_ty: Vec<Ty>,
+    pub ret_ty: Ty
 }
 
 #[derive(Debug)]

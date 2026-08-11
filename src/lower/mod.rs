@@ -38,6 +38,7 @@ impl Lower {
 
         for stmt in tast.stmts {
             match stmt {
+                tast::Stmt::ExternFunc(_) => todo!("emit wasm imports"),
                 tast::Stmt::Func(func) => funcs.push(self.lower_func_decl(&func)),
                 tast::Stmt::Struct(_) => todo!("implement struct ir"),
                 _ => unreachable!("bug: sema let non top level stmt thru to lower")
@@ -62,6 +63,7 @@ impl Lower {
                 ir::Expr::LocalSet(ir::LocalSet { id: ir::LocalId(assign.id.0), value: Box::new(value) })
             }
             tast::Stmt::Expr(expr) => self.lower_expr(expr),
+            tast::Stmt::ExternFunc(_) => unreachable!("nested extern"),
             tast::Stmt::Func(_) => unreachable!("nested functions"),
             tast::Stmt::Struct(_) => unreachable!("nested structs")
         }

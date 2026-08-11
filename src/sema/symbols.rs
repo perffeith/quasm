@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 use indexmap::IndexMap;
+use crate::common::span::Span;
+use crate::parser::ast;
+use crate::sema::SemaError;
 use crate::sema::{ty::Ty};
 use crate::sema::tast::{FuncId, StructId, VarId};
 
@@ -67,23 +70,68 @@ impl SymbolTable {
         self.scopes.pop();
     }
 
+    fn err(&self, message: impl Into<String>, span: Span) -> SemaError {
+        SemaError { message: message.into(), span }
+    }
+
+    // ----Type resolution----
+    pub fn resolve_ty(&self, ty: &ast::Ty) -> Result<Ty, SemaError> {
+        match ty {
+            ast::Ty::Named { name } => {
+                match name.value.as_str() {
+                    "Int" => Ok(Ty::Int),
+                    "Float" => Ok(Ty::Float),
+                    "Bool" => Ok(Ty::Bool),
+                    _ => match self.lookup_struct_id(&name.value) {
+                        Some(id) => Ok(Ty::Struct(id)),
+                        None => Err(self.err(format!("unknown type `{}`", name.value), name.span))
+                    }
+                }
+            }
+            ast::Ty::Array(inner) => {
+                Ok(Ty::Array(Box::new(self.resolve_ty(inner)?)))
+            }
+            ast::Ty::Func { params, ret } => {
+                let params = params.iter().map(|p| self.resolve_ty(p)).collect::<Result<_,_>>()?;
+                let ret = match ret {
+                    Some(r) => self.resolve_ty(r)?,
+                    None => Ty::Void
+                };
+                Ok(Ty::Func { params, ret: Box::new(ret) })
+            }
+        }
+    }
+
+    fn resolve_params_ty(&self, params: &[ast::Param]) -> Result<Vec<Ty>, SemaError> {
+        params.iter().map(|param| match &param.ty {
+            Some(ty) => self.resolve_ty(ty),
+            None => Ok(Ty::Infer)
+        }).collect()
+    }
+
     // ----Function related stuffs----
-    pub fn define_func(&mut self, name: &str, params_ty: Vec<Ty>, ret_ty: Ty) -> Result<(), String> {
-        if !is_snake_case(name) {
-            return Err(format!("function `{name}` must be snake_case"));
+    pub fn define_func(&mut self, name: &ast::Identifier, params: &[ast::Param], ret: &Option<ast::Ty>) -> Result<(), SemaError> {
+        if !is_snake_case(&name.value) {
+            return Err(self.err(format!("function `{}` must be snake_case", name.value), name.span));
         }
 
+        let params_ty = self.resolve_params_ty(params)?;
+        let ret_ty = match ret {
+            Some(ret) => self.resolve_ty(ret)?,
+            None => Ty::Void
+        };
+
         let key = FuncKey {
-            name: name.to_string(),
+            name: name.value.clone(),
             first_param_ty: params_ty.first().cloned()
         };
 
         if self.funcs.contains_key(&key) {
             let signature = match &key.first_param_ty {
-                Some(ty) => format!("`{name}({ty:?}...)`"),
-                None => format!("`{name}`"),
+                Some(ty) => format!("`{}({ty:?}...)`", name.value),
+                None => format!("`{}`", name.value),
             };
-            return Err(format!("function {signature} is already defined"));
+            return Err(self.err(format!("function {signature} is already defined"), name.span));
         }
 
         let id = FuncId(self.funcs.len() as u32);
@@ -94,6 +142,18 @@ impl SymbolTable {
 
     pub fn lookup_func(&self, name: &str, first_param_ty: Option<Ty>) -> Option<&FuncSymbol> {
         self.funcs.get(&FuncKey { name: name.to_string(), first_param_ty })
+    }
+
+    pub fn lookup_func_sig(&self, name: &ast::Identifier, first_param: Option<&ast::Param>) -> Result<(FuncId, Vec<Ty>, Ty), SemaError> {
+        let first_param_ty = first_param
+            .map(|param| self.resolve_ty(param.ty.as_ref()
+            .expect("bug: func decl param ended up without a type annot. WHAT?")))
+            .transpose()?;
+
+        let Some(symbol) = self.lookup_func(&name.value, first_param_ty) else {
+            return Err(self.err(format!("function `{}` is not declared", name.value), name.span));
+        };
+        Ok((symbol.id, symbol.params_ty.clone(), symbol.ret_ty.clone()))
     }
 
     pub fn enter_func(&mut self, ret_ty: Ty) {
@@ -118,30 +178,30 @@ impl SymbolTable {
     }
 
     // ----Struct related stuffs----
-    pub fn define_struct(&mut self, name: &str) -> Result<StructId, String> {
-        if !is_pascal_case(name) {
-            return Err(format!("struct `{name}` must be PascalCase"));
+    pub fn define_struct(&mut self, name: &ast::Identifier) -> Result<StructId, SemaError> {
+        if !is_pascal_case(&name.value) {
+            return Err(self.err(format!("struct `{}` must be PascalCase", name.value), name.span));
         }
 
-        if self.struct_ids.contains_key(name) {
-            return Err(format!("struct {name} is already defined"));
+        if self.struct_ids.contains_key(&name.value) {
+            return Err(self.err(format!("struct {} is already defined", name.value), name.span));
         }
 
         let id = StructId(self.struct_ids.len() as u32);
-        self.struct_ids.insert(name.to_string(), id);
+        self.struct_ids.insert(name.value.clone(), id);
         Ok(id)
     }
 
-    pub fn define_struct_fields(&mut self, name: &str, fields: &[(String, Ty)]) -> Result<StructId, String> {
-        let id = *self.struct_ids.get(name)
+    pub fn define_struct_fields(&mut self, name: &ast::Identifier, fields: &[ast::StructField]) -> Result<StructId, SemaError> {
+        let id = *self.struct_ids.get(&name.value)
             .expect("bug: getting struct id has failed, something wrong with pass 1");
 
         let mut map = IndexMap::new();
-        for (fname, ty) in fields {
-            if map.contains_key(fname) {
-                return Err(format!("field `{fname}` is already defined"));
+        for field in fields {
+            if map.contains_key(&field.name.value) {
+                return Err(self.err(format!("field `{}` is already defined", field.name.value), field.name.span));
             }
-            map.insert(fname.clone(), ty.clone());
+            map.insert(field.name.value.clone(), self.resolve_ty(&field.ty)?);
         }
 
         self.structs.insert(id, StructSymbol { id, fields: map });
@@ -157,21 +217,22 @@ impl SymbolTable {
     }
 
     // ----Variable related stuffs----
-    pub fn define_var(&mut self, name: &str, ty: Ty) -> Result<VarId, String> {
-        if !is_snake_case(name) {
-            return Err(format!("variable `{name}` must be snake_case"));
+    pub fn define_var(&mut self, name: &ast::Identifier, ty: Ty) -> Result<VarId, SemaError> {
+        if !is_snake_case(&name.value) {
+            return Err(self.err(format!("variable `{}` must be snake_case", name.value), name.span));
+        }
+
+        let scope = self.scopes.last()
+            .expect("bug: idk why but for some reason define_var is called without any scope");
+
+        if scope.contains_key(&name.value) {
+            return Err(self.err(format!("variable `{}` is already defined", name.value), name.span));
         }
 
         let id = self.alloc_local_id();
-
-        let scope = self.scopes.last_mut()
-            .expect("bug: idk why but for some reason define_var is called without any scope");
-
-        if scope.contains_key(name) {
-            return Err(format!("variable `{name}` is already defined"))
-        }
-
-        scope.insert(name.to_string(), VarSymbol { id, ty });
+        self.scopes.last_mut()
+            .expect("bug: scope vanished between the check above and here")
+            .insert(name.value.clone(), VarSymbol { id, ty });
         Ok(id)
     }
 

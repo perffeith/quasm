@@ -41,7 +41,7 @@ impl Stmt {
 #[derive(Debug)]
 pub struct ExternFunc {
     pub module: Identifier,
-    pub symbol: Identifier,
+    pub item: Identifier,
     pub name: Identifier,
     pub params: Vec<Param>,
     pub ret: Option<Ty>,

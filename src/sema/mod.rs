@@ -46,42 +46,7 @@ impl Sema {
     }
 
     fn resolve_ty(&self, ty: &ast::Ty) -> Result<Ty, SemaError> {
-        match ty {
-            ast::Ty::Named { name } => {
-                match name.value.as_str() {
-                    "Int" => Ok(Ty::Int),
-                    "Float" => Ok(Ty::Float),
-                    "Bool" => Ok(Ty::Bool),
-                    _ => match self.sym_table.lookup_struct_id(&name.value) {
-                        Some(id) => Ok(Ty::Struct(id)),
-                        None => Err(self.err(format!("unknown type `{}`", name.value), name.span))
-                    }
-                }
-            }
-            ast::Ty::Array(inner) => {
-                Ok(Ty::Array(Box::new(self.resolve_ty(inner)?)))
-            }
-            ast::Ty::Func { params, ret } => {
-                let params = params.iter().map(|p| self.resolve_ty(p)).collect::<Result<_,_>>()?;
-                let ret = match ret {
-                    Some(r) => self.resolve_ty(r)?,
-                    None => Ty::Void
-                };
-                Ok(Ty::Func { params, ret: Box::new(ret) })
-            }
-        }
-    }
-
-    fn resolve_func_params_ty(&self, func: &ast::Func) -> Result<Vec<Ty>, SemaError> {
-        let mut params_ty = Vec::new();
-        for param in &func.params {
-            let param_ty = match &param.ty {
-                Some(ty) => self.resolve_ty(ty)?,
-                None => Ty::Infer
-            };
-            params_ty.push(param_ty);
-        }
-        Ok(params_ty)
+        self.sym_table.resolve_ty(ty)
     }
 
     fn check_program(&mut self, ast: ast::Program) -> Result<tast::Program, SemaError> {
@@ -91,8 +56,7 @@ impl Sema {
                 ast::Stmt::ExternFunc(_) => {}
                 ast::Stmt::Func(_) => {}
                 ast::Stmt::Struct(struc) => {
-                    self.sym_table.define_struct(&struc.name.value)
-                        .map_err(|msg| self.err(msg, struc.name.span))?;
+                    self.sym_table.define_struct(&struc.name)?;
                 }
                 ast::Stmt::Return(ret) => {
                     return Err(self.err("top level should not contain return", ret.span));
@@ -118,27 +82,21 @@ impl Sema {
             }
         }
 
-        // pass 2: resolve func signatures and struct fields
+        // pass 2a: resolve extern signatures first
+        for stmt in &ast.stmts {
+            if let ast::Stmt::ExternFunc(extern_func) = stmt {
+                self.sym_table.define_func(&extern_func.name, &extern_func.params, &extern_func.ret)?;
+            }
+        }
+
+        // pass 2b: resolve func signatures and struct fields
         for stmt in &ast.stmts {
             match stmt {
                 ast::Stmt::Func(func) => {
-                    let name = func.name.value.clone();
-                    let params_ty = self.resolve_func_params_ty(func)?;
-                    let ret = match &func.ret {
-                        Some(ret) => self.resolve_ty(ret)?,
-                        None => Ty::Void
-                    };
-                    self.sym_table.define_func(&name, params_ty, ret)
-                        .map_err(|msg| self.err(msg, func.name.span))?;
+                    self.sym_table.define_func(&func.name, &func.params, &func.ret)?;
                 }
                 ast::Stmt::Struct(struc) => {
-                    let mut fields = Vec::new();
-                    for field in &struc.fields {
-                        let ty = self.resolve_ty(&field.ty)?;
-                        fields.push((field.name.value.clone(), ty));
-                    }
-                    self.sym_table.define_struct_fields(&struc.name.value, &fields)
-                        .map_err(|msg| self.err(msg, struc.name.span))?;
+                    self.sym_table.define_struct_fields(&struc.name, &struc.fields)?;
                 }
                 _ => {}
             }
@@ -158,9 +116,7 @@ impl Sema {
 
     fn check_stmt(&mut self, stmt: ast::Stmt) -> Result<tast::Stmt, SemaError> {
         match stmt {
-            ast::Stmt::ExternFunc(extern_func) => {
-                Err(self.err("not implemented yet", extern_func.span))
-            }
+            ast::Stmt::ExternFunc(extern_func) => Ok(tast::Stmt::ExternFunc(self.check_extern_func_decl(extern_func)?)),
             ast::Stmt::Func(func) => Ok(tast::Stmt::Func(self.check_func_decl(func)?)),
             ast::Stmt::Return(ret) => Ok(tast::Stmt::Return(self.check_return(ret)?)),
             ast::Stmt::Struct(struc) => Ok(tast::Stmt::Struct(self.check_struct_decl(struc)?)),
@@ -175,27 +131,27 @@ impl Sema {
         }
     }
 
+    fn check_extern_func_decl(&self, extern_func: ast::ExternFunc) -> Result<tast::ExternFunc, SemaError> {
+        let (id, params_ty, ret_ty) = self.sym_table.lookup_func_sig(&extern_func.name, extern_func.params.first())?;
+
+        Ok(tast::ExternFunc {
+            id,
+            module: extern_func.module.value,
+            item: extern_func.item.value,
+            params_ty,
+            ret_ty
+        })
+    }
+
     fn check_func_decl(&mut self, func: ast::Func) -> Result<tast::Func, SemaError> {
         // lookup symbol table
-        let name = func.name.value;
-        let first_param_ty = func.params.first()
-            .map(|param| self.resolve_ty(param.ty.as_ref()
-            .expect("bug: func decl param ended up without a type annot. WHAT?")))
-            .transpose()?;
-
-        let Some(func_symbol) = self.sym_table.lookup_func(&name, first_param_ty) else {
-            return Err(self.err(format!("function `{}` is not declared", name), func.name.span));
-        };
-        let id = func_symbol.id;
-        let params_ty = func_symbol.params_ty.clone();
-        let ret_ty = func_symbol.ret_ty.clone();
+        let (id, params_ty, ret_ty) = self.sym_table.lookup_func_sig(&func.name, func.params.first())?;
 
         // enter func and build params
         self.sym_table.enter_func(ret_ty.clone());
         let mut params = Vec::new();
         for (param, ty) in func.params.iter().zip(params_ty) {
-            let id = self.sym_table.define_var(&param.name.value, ty.clone())
-                .map_err(|msg| self.err(msg, param.name.span))?;
+            let id = self.sym_table.define_var(&param.name, ty.clone())?;
             params.push(tast::Param { id, ty });
         }
 
@@ -205,7 +161,7 @@ impl Sema {
 
         if ret_ty != Ty::Void && !body.always_returns() {
             return Err(self.err(
-                format!("function `{}` must return on all paths", name),
+                format!("function `{}` must return on all paths", func.name.value),
                 func.name.span
             ));
         }
@@ -241,8 +197,7 @@ impl Sema {
             None => value.ty().clone()
         };
 
-        let id = self.sym_table.define_var(&local.name.value, value_ty.clone())
-            .map_err(|msg| self.err(msg, local.name.span))?;
+        let id = self.sym_table.define_var(&local.name, value_ty.clone())?;
 
         Ok(tast::Local { id, value, value_ty, ty: Ty::Void })
     }

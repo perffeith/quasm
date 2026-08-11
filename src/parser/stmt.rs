@@ -47,7 +47,7 @@ impl Parser {
         self.consume(TokenKind::Extern)?;
         let module = self.parse_identifier()?;
         self.consume(TokenKind::Slash)?;
-        let symbol = self.parse_identifier()?;
+        let item = self.parse_identifier()?;
 
         self.expect_newline("extern path")?;
         let (name, params, ret) = self.parse_func_sig()?;
@@ -56,7 +56,7 @@ impl Parser {
             return Err(self.err("extern function cannot have a body"));
         }
 
-        Ok(ExternFunc { module, symbol, name, params, ret, span: self.span_from(start) })
+        Ok(ExternFunc { module, item, name, params, ret, span: self.span_from(start) })
     }
 
     fn parse_func_decl(&mut self) -> Result<Func, ParseError> {
