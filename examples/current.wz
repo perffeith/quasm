@@ -1,7 +1,0 @@
-func add(a: Int, b: Int): Int {
-    return a + b
-}
-
-func main() {
-    local result = add(4, 10)
-}
