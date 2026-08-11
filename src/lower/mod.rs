@@ -34,11 +34,12 @@ impl Lower {
     }
 
     pub fn lower_module(&mut self, tast: tast::Program) -> ir::Module {
+        let mut imports = Vec::new();
         let mut funcs = Vec::new();
 
         for stmt in tast.stmts {
             match stmt {
-                tast::Stmt::ExternFunc(_) => todo!("emit wasm imports"),
+                tast::Stmt::ExternFunc(extern_func) => imports.push(self.lower_extern_func_decl(extern_func)),
                 tast::Stmt::Func(func) => funcs.push(self.lower_func_decl(&func)),
                 tast::Stmt::Struct(_) => todo!("implement struct ir"),
                 _ => unreachable!("bug: sema let non top level stmt thru to lower")
@@ -47,6 +48,7 @@ impl Lower {
 
         ir::Module {
             heap_types: vec![],
+            imports,
             funcs,
             entry: tast.entry.map(|id| ir::FuncId(id.0))
         }
@@ -72,6 +74,16 @@ impl Lower {
     fn lower_block(&mut self, block: &tast::Block) -> ir::Block {
         let exprs = block.stmts.iter().map(|stmt| self.lower_stmt(stmt)).collect();
         ir::Block { exprs, ty: self.lower_ty(&block.ty) }
+    }
+
+    fn lower_extern_func_decl(&mut self, func: tast::ExternFunc) -> ir::ImportFunc {
+        ir::ImportFunc {
+            id: ir::FuncId(func.id.0),
+            module: func.module,
+            item: func.item,
+            params: func.params_ty.iter().map(|ty| self.lower_ty(ty)).collect(),
+            ret_ty: self.lower_ty(&func.ret_ty)
+        }
     }
 
     fn lower_func_decl(&mut self, func: &tast::Func) -> ir::Func {

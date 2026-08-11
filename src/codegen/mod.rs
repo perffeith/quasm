@@ -3,10 +3,12 @@ pub mod op;
 use std::collections::HashMap;
 use wasm_encoder::{
     CodeSection,
+    EntityType,
     ExportKind,
     ExportSection,
     Function,
     FunctionSection,
+    ImportSection,
     Module,
     TypeSection,
     ValType,
@@ -18,6 +20,7 @@ use op::bin_op;
 
 pub struct Codegen {
     types: TypeSection,
+    imports: ImportSection,
     funcs: FunctionSection,
     exports: ExportSection,
     code: CodeSection,
@@ -32,6 +35,7 @@ impl Codegen {
     fn new() -> Self {
         Self {
             types: TypeSection::new(),
+            imports: ImportSection::new(),
             funcs: FunctionSection::new(),
             exports: ExportSection::new(),
             code: CodeSection::new(),
@@ -46,6 +50,10 @@ impl Codegen {
             IrTy::F64 => ValType::F64,
             IrTy::Void => unreachable!("bug: Void has no wasm value type")
         }
+    }
+
+    fn param_tys(&self, tys: impl IntoIterator<Item = IrTy>) -> Vec<ValType> {
+        tys.into_iter().map(|ty| self.val_ty(ty)).collect()
     }
 
     fn result_tys(&self, ty: IrTy) -> Vec<ValType> {
@@ -65,7 +73,12 @@ impl Codegen {
     }
 
     fn emit_module(mut self, module: ir::Module) -> Vec<u8> {
-        // pas 1: cache func sig
+        // pass 1: declare imports
+        for import in &module.imports {
+            self.declare_import(import);
+        }
+
+        // pass 2: cache func sig
         for func in &module.funcs {
             self.declare_func(func);
         }
@@ -74,21 +87,29 @@ impl Codegen {
             self.exports.export("main", ExportKind::Func, entry.0);
         }
 
-        // pass 2: emit func bodies
+        // pass 3: emit func bodies
         for func in module.funcs {
             self.emit_func(func);
         }
 
         let mut wasm = Module::new();
         wasm.section(&self.types);
+        wasm.section(&self.imports);
         wasm.section(&self.funcs);
         wasm.section(&self.exports);
         wasm.section(&self.code);
         wasm.finish()
     }
 
+    fn declare_import(&mut self, import: &ir::ImportFunc) {
+        let params = self.param_tys(import.params.iter().copied());
+        let results = self.result_tys(import.ret_ty);
+        let index = self.func_sig_index(params, results);
+        self.imports.import(&import.module, &import.item, EntityType::Function(index));
+    }
+
     fn declare_func(&mut self, func: &ir::Func) {
-        let params = func.params.iter().map(|param| self.val_ty(param.ty)).collect();
+        let params = self.param_tys(func.params.iter().map(|param| param.ty));
         let results = self.result_tys(func.ret_ty);
         let index = self.func_sig_index(params, results);
         self.funcs.function(index);

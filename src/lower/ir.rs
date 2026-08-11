@@ -16,6 +16,7 @@ pub struct TypeId(pub u32);
 #[derive(Debug)]
 pub struct Module {
     pub heap_types: Vec<HeapType>,
+    pub imports: Vec<ImportFunc>,
     pub funcs: Vec<Func>,
     pub entry: Option<FuncId>
 }
@@ -31,6 +32,15 @@ pub enum IrTy {
 #[derive(Debug)]
 pub enum HeapType {
     Struct { fields: Vec<IrTy> }
+}
+
+#[derive(Debug)]
+pub struct ImportFunc {
+    pub id: FuncId,
+    pub module: String,
+    pub item: String,
+    pub params: Vec<IrTy>,
+    pub ret_ty: IrTy
 }
 
 #[derive(Debug)]
