@@ -18,12 +18,6 @@ fn is_pascal_case(name: &str) -> bool {
     starts_ok && name.chars().all(|c| c.is_ascii_alphanumeric())
 }
 
-#[derive(PartialEq, Eq, Hash)]
-struct FuncKey {
-    name: String,
-    first_param_ty: Option<Ty> // None for func with no param
-}
-
 pub struct FuncSymbol {
     pub id: FuncId,
     pub params_ty: Vec<Ty>,
@@ -42,7 +36,7 @@ pub struct VarSymbol {
 
 // ----Symbol Table----
 pub struct SymbolTable {
-    funcs: HashMap<FuncKey, FuncSymbol>,
+    funcs: HashMap<String, FuncSymbol>,
     struct_ids: HashMap<String, StructId>,
     structs: HashMap<StructId, StructSymbol>,
     scopes: Vec<HashMap<String, VarSymbol>>,
@@ -121,27 +115,18 @@ impl SymbolTable {
             None => Ty::Void
         };
 
-        let key = FuncKey {
-            name: name.value.clone(),
-            first_param_ty: params_ty.first().cloned()
-        };
-
-        if self.funcs.contains_key(&key) {
-            let signature = match &key.first_param_ty {
-                Some(ty) => format!("`{}({ty:?}...)`", name.value),
-                None => format!("`{}`", name.value),
-            };
-            return Err(self.err(format!("function {signature} is already defined"), name.span));
+        if self.funcs.contains_key(&name.value) {
+            return Err(self.err(format!("function `{}` is already defined", name.value), name.span));
         }
 
         let id = FuncId(self.funcs.len() as u32);
 
-        self.funcs.insert(key, FuncSymbol { id, params_ty, ret_ty });
+        self.funcs.insert(name.value.clone(), FuncSymbol { id, params_ty, ret_ty });
         Ok(())
     }
 
-    pub fn lookup_func(&self, name: &str, first_param_ty: Option<Ty>) -> Option<&FuncSymbol> {
-        self.funcs.get(&FuncKey { name: name.to_string(), first_param_ty })
+    pub fn lookup_func(&self, name: &str) -> Option<&FuncSymbol> {
+        self.funcs.get(name)
     }
 
     pub fn enter_func(&mut self, ret_ty: Ty) {

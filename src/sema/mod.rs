@@ -110,7 +110,7 @@ impl Sema {
             stmts.push(self.check_stmt(stmt)?);
         }
 
-        let entry = self.sym_table.lookup_func("main", None).map(|func| func.id);
+        let entry = self.sym_table.lookup_func("main").map(|func| func.id);
 
         Ok(tast::Program { stmts, entry })
     }
@@ -132,20 +132,15 @@ impl Sema {
         }
     }
 
-    pub fn lookup_func_sig(&self, name: &ast::Identifier, first_param: Option<&ast::Param>) -> Result<(FuncId, Vec<Ty>, Ty), SemaError> {
-        let first_param_ty = first_param
-            .map(|param| self.resolve_ty(param.ty.as_ref()
-            .expect("bug: func decl param ended up without a type annot. WHAT?")))
-            .transpose()?;
-
-        let Some(symbol) = self.sym_table.lookup_func(&name.value, first_param_ty) else {
+    pub fn lookup_func_sig(&self, name: &ast::Identifier) -> Result<(FuncId, Vec<Ty>, Ty), SemaError> {
+        let Some(symbol) = self.sym_table.lookup_func(&name.value) else {
             return Err(self.err(format!("function `{}` is not declared", name.value), name.span));
         };
         Ok((symbol.id, symbol.params_ty.clone(), symbol.ret_ty.clone()))
     }
 
     fn check_extern_func_decl(&self, extern_func: ast::ExternFunc) -> Result<tast::ExternFunc, SemaError> {
-        let (id, params_ty, ret_ty) = self.lookup_func_sig(&extern_func.name, extern_func.params.first())?;
+        let (id, params_ty, ret_ty) = self.lookup_func_sig(&extern_func.name)?;
 
         Ok(tast::ExternFunc {
             id,
@@ -158,7 +153,7 @@ impl Sema {
 
     fn check_func_decl(&mut self, func: ast::Func) -> Result<tast::Func, SemaError> {
         // lookup symbol table
-        let (id, params_ty, ret_ty) = self.lookup_func_sig(&func.name, func.params.first())?;
+        let (id, params_ty, ret_ty) = self.lookup_func_sig(&func.name)?;
 
         // enter func and build params
         self.sym_table.enter_func(ret_ty.clone());
@@ -363,9 +358,7 @@ impl Sema {
                 }
 
                 // otherwise it's a function call
-                let first_param_ty = args.first().map(|arg| arg.ty().clone());
-
-                let Some(func_symbol) = self.sym_table.lookup_func(&name, first_param_ty) else {
+                let Some(func_symbol) = self.sym_table.lookup_func(&name) else {
                     return Err(self.err(
                         format!("cannot find function `{}`", name),
                         identifier.span

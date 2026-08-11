@@ -1,5 +1,5 @@
 extern env/print_i64
-func print(value: Int)
+func print_int(value: Int)
 
 extern env/print_f64
-func print(value: Float)
+func print_float(value: Float)
