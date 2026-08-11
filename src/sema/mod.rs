@@ -3,10 +3,11 @@ pub mod tast;
 pub mod symbols;
 
 use ty::Ty;
+use tast::FuncId;
+use symbols::SymbolTable;
 use crate::parser::ast;
 use crate::common::Literal;
 use crate::common::span::Span;
-use symbols::SymbolTable;
 
 pub struct Sema {
     sym_table: SymbolTable
@@ -131,8 +132,20 @@ impl Sema {
         }
     }
 
+    pub fn lookup_func_sig(&self, name: &ast::Identifier, first_param: Option<&ast::Param>) -> Result<(FuncId, Vec<Ty>, Ty), SemaError> {
+        let first_param_ty = first_param
+            .map(|param| self.resolve_ty(param.ty.as_ref()
+            .expect("bug: func decl param ended up without a type annot. WHAT?")))
+            .transpose()?;
+
+        let Some(symbol) = self.sym_table.lookup_func(&name.value, first_param_ty) else {
+            return Err(self.err(format!("function `{}` is not declared", name.value), name.span));
+        };
+        Ok((symbol.id, symbol.params_ty.clone(), symbol.ret_ty.clone()))
+    }
+
     fn check_extern_func_decl(&self, extern_func: ast::ExternFunc) -> Result<tast::ExternFunc, SemaError> {
-        let (id, params_ty, ret_ty) = self.sym_table.lookup_func_sig(&extern_func.name, extern_func.params.first())?;
+        let (id, params_ty, ret_ty) = self.lookup_func_sig(&extern_func.name, extern_func.params.first())?;
 
         Ok(tast::ExternFunc {
             id,
@@ -145,7 +158,7 @@ impl Sema {
 
     fn check_func_decl(&mut self, func: ast::Func) -> Result<tast::Func, SemaError> {
         // lookup symbol table
-        let (id, params_ty, ret_ty) = self.sym_table.lookup_func_sig(&func.name, func.params.first())?;
+        let (id, params_ty, ret_ty) = self.lookup_func_sig(&func.name, func.params.first())?;
 
         // enter func and build params
         self.sym_table.enter_func(ret_ty.clone());

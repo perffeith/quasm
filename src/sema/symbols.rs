@@ -144,18 +144,6 @@ impl SymbolTable {
         self.funcs.get(&FuncKey { name: name.to_string(), first_param_ty })
     }
 
-    pub fn lookup_func_sig(&self, name: &ast::Identifier, first_param: Option<&ast::Param>) -> Result<(FuncId, Vec<Ty>, Ty), SemaError> {
-        let first_param_ty = first_param
-            .map(|param| self.resolve_ty(param.ty.as_ref()
-            .expect("bug: func decl param ended up without a type annot. WHAT?")))
-            .transpose()?;
-
-        let Some(symbol) = self.lookup_func(&name.value, first_param_ty) else {
-            return Err(self.err(format!("function `{}` is not declared", name.value), name.span));
-        };
-        Ok((symbol.id, symbol.params_ty.clone(), symbol.ret_ty.clone()))
-    }
-
     pub fn enter_func(&mut self, ret_ty: Ty) {
         self.enter_scope();
         self.cur_local_id = 0;
