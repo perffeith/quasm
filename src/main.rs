@@ -1,9 +1,22 @@
-use clap::Parser as ClapParser;
+use clap::{Args as ClapArgs, Parser as ClapParser, Subcommand};
 use wazi::{lexer, parser, sema, lower, codegen};
 use std::{fs, path::PathBuf};
 
 #[derive(ClapParser)]
-struct Args {
+#[command(name = "wazi")]
+struct Cli {
+    #[command(subcommand)]
+    command: Command
+}
+
+#[derive(Subcommand)]
+enum Command {
+    Compile(BuildArgs),
+    Run(BuildArgs)
+}
+
+#[derive(ClapArgs)]
+struct BuildArgs {
     file: PathBuf,
     #[arg(short = 'd', long = "debug")]
     debug: bool
@@ -16,8 +29,7 @@ fn write_debug(name: &str, contents: &str) {
     }
 }
 
-fn main() {
-    let args = Args::parse();
+fn compile(args: &BuildArgs) -> Vec<u8> {
     let src = fs::read_to_string(&args.file).unwrap_or_else(|e| {
         eprintln!("error reading '{}': {}", args.file.display(), e);
         std::process::exit(1);
@@ -61,10 +73,32 @@ fn main() {
     let ir = lower::lower(tast);
     if args.debug { write_debug("ir.txt", &format!("{:#?}", ir)); }
 
-    let wasm = codegen::emit(ir);
-    fs::create_dir_all("build").and_then(|_| fs::write("build/out.wasm", wasm))
+    codegen::emit(ir)
+}
+
+fn write_wasm(wasm: &[u8]) -> PathBuf {
+    let path = PathBuf::from("build/out.wasm");
+    fs::create_dir_all("build").and_then(|_| fs::write(&path, wasm))
         .unwrap_or_else(|e| {
             eprintln!("error writing wasm: {}", e);
             std::process::exit(1);
         });
+    path
+}
+
+fn main() {
+    let cli = Cli::parse();
+
+    match &cli.command {
+        Command::Compile(args) => {
+            let wasm = compile(args);
+            write_wasm(&wasm);
+        },
+        Command::Run(args) => {
+            let wasm = compile(args);
+            write_wasm(&wasm);
+
+            todo!("run module in builtin wasm runtime");
+        }
+    }
 }
