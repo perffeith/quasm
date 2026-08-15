@@ -30,12 +30,17 @@ fn write_debug(name: &str, contents: &str) {
 }
 
 fn compile(args: &BuildArgs) -> Vec<u8> {
+    let prelude = fs::read_to_string("builtin/prelude.wz")
+        .expect("failed to read prelude");
+
     let src = fs::read_to_string(&args.file).unwrap_or_else(|e| {
         eprintln!("error reading '{}': {}", args.file.display(), e);
         std::process::exit(1);
     });
 
-    let tokens = match lexer::lex(&src) {
+    let final_src = prelude + &src;
+
+    let tokens = match lexer::lex(&final_src) {
         Ok(tokens) => {
             if args.debug { write_debug("tokens.txt", &lexer::debug_tokens(&tokens)); }
             tokens
