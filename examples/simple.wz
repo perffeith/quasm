@@ -1,6 +1,6 @@
 func main() {
     local result = add(12, 28)
-    // print_int(result)
+    print_int(result)
 }
 
 func add(a: Int, b: Int): Int {
