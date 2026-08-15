@@ -24,8 +24,7 @@ pub struct Module {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IrTy {
     I32,
-    I64,
-    F64,
+    F32,
     Void // erased by codegen (no wasm value)
 }
 
@@ -60,8 +59,8 @@ pub struct Param {
 
 #[derive(Debug)]
 pub enum Expr {
-    ConstInt(i64),
-    ConstFloat(f64),
+    ConstInt(i32),
+    ConstFloat(f32),
     ConstBool(bool),
     Void,
     LocalSet(LocalSet),
@@ -80,8 +79,8 @@ pub enum Expr {
 impl Expr {
     pub fn ty(&self) -> IrTy {
         match self {
-            Expr::ConstInt(_) => IrTy::I64,
-            Expr::ConstFloat(_) => IrTy::F64,
+            Expr::ConstInt(_) => IrTy::I32,
+            Expr::ConstFloat(_) => IrTy::F32,
             Expr::ConstBool(_) => IrTy::I32,
             Expr::Void | Expr::LocalSet(_) | Expr::Return(_) => IrTy::Void,
             Expr::LocalGet(e) => e.ty,

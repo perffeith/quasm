@@ -46,8 +46,7 @@ impl Codegen {
     fn val_ty(&self, ty: IrTy) -> ValType {
         match ty {
             IrTy::I32 => ValType::I32,
-            IrTy::I64 => ValType::I64,
-            IrTy::F64 => ValType::F64,
+            IrTy::F32 => ValType::F32,
             IrTy::Void => unreachable!("bug: Void has no wasm value type")
         }
     }
@@ -141,7 +140,7 @@ impl Codegen {
     fn emit_expr(&mut self, body: &mut Function, expr: ir::Expr) {
         match expr {
             ir::Expr::ConstInt(value) => {
-                body.instruction(&Instruction::I64Const(value));
+                body.instruction(&Instruction::I32Const(value));
             }
             ir::Expr::LocalGet(get) => {
                 body.instruction(&Instruction::LocalGet(get.id.0));

@@ -22,8 +22,8 @@ impl Lower {
 
     fn lower_ty(&self, ty: &Ty) -> IrTy {
         match ty {
-            Ty::Int => IrTy::I64,
-            Ty::Float => IrTy::F64,
+            Ty::Int => IrTy::I32,
+            Ty::Float => IrTy::F32,
             Ty::Bool => IrTy::I32,
             Ty::Void => IrTy::Void,
             Ty::Struct(_) => todo!("struct types"),

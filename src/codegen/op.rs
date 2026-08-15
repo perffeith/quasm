@@ -4,33 +4,30 @@ use wasm_encoder::Instruction;
 
 pub fn bin_op(op: BinOpKind, ty: IrTy) -> Instruction<'static> {
     match (op, ty) {
-        (BinOpKind::Add, IrTy::I64) => Instruction::I64Add,
-        (BinOpKind::Sub, IrTy::I64) => Instruction::I64Sub,
-        (BinOpKind::Mul, IrTy::I64) => Instruction::I64Mul,
-        (BinOpKind::Div, IrTy::I64) => Instruction::I64DivS,
-        (BinOpKind::Lt, IrTy::I64) => Instruction::I64LtS,
-        (BinOpKind::Gt, IrTy::I64) => Instruction::I64GtS,
-        (BinOpKind::LtEq, IrTy::I64) => Instruction::I64LeS,
-        (BinOpKind::GtEq, IrTy::I64) => Instruction::I64GeS,
-        (BinOpKind::EqEq, IrTy::I64) => Instruction::I64Eq,
-        (BinOpKind::NotEq, IrTy::I64) => Instruction::I64Ne,
-
-        (BinOpKind::Add, IrTy::F64) => Instruction::F64Add,
-        (BinOpKind::Sub, IrTy::F64) => Instruction::F64Sub,
-        (BinOpKind::Mul, IrTy::F64) => Instruction::F64Mul,
-        (BinOpKind::Div, IrTy::F64) => Instruction::F64Div,
-        (BinOpKind::Lt, IrTy::F64) => Instruction::F64Lt,
-        (BinOpKind::Gt, IrTy::F64) => Instruction::F64Gt,
-        (BinOpKind::LtEq, IrTy::F64) => Instruction::F64Le,
-        (BinOpKind::GtEq, IrTy::F64) => Instruction::F64Ge,
-        (BinOpKind::EqEq, IrTy::F64) => Instruction::F64Eq,
-        (BinOpKind::NotEq, IrTy::F64) => Instruction::F64Ne,
-
-        // bool operands; And/Or are eager here, not short circuiting
-        (BinOpKind::And, IrTy::I32) => Instruction::I32And,
-        (BinOpKind::Or, IrTy::I32) => Instruction::I32Or,
+        (BinOpKind::Add, IrTy::I32) => Instruction::I32Add,
+        (BinOpKind::Sub, IrTy::I32) => Instruction::I32Sub,
+        (BinOpKind::Mul, IrTy::I32) => Instruction::I32Mul,
+        (BinOpKind::Div, IrTy::I32) => Instruction::I32DivS,
+        (BinOpKind::Lt, IrTy::I32) => Instruction::I32LtS,
+        (BinOpKind::Gt, IrTy::I32) => Instruction::I32GtS,
+        (BinOpKind::LtEq, IrTy::I32) => Instruction::I32LeS,
+        (BinOpKind::GtEq, IrTy::I32) => Instruction::I32GeS,
         (BinOpKind::EqEq, IrTy::I32) => Instruction::I32Eq,
         (BinOpKind::NotEq, IrTy::I32) => Instruction::I32Ne,
+
+        (BinOpKind::Add, IrTy::F32) => Instruction::F32Add,
+        (BinOpKind::Sub, IrTy::F32) => Instruction::F32Sub,
+        (BinOpKind::Mul, IrTy::F32) => Instruction::F32Mul,
+        (BinOpKind::Div, IrTy::F32) => Instruction::F32Div,
+        (BinOpKind::Lt, IrTy::F32) => Instruction::F32Lt,
+        (BinOpKind::Gt, IrTy::F32) => Instruction::F32Gt,
+        (BinOpKind::LtEq, IrTy::F32) => Instruction::F32Le,
+        (BinOpKind::GtEq, IrTy::F32) => Instruction::F32Ge,
+        (BinOpKind::EqEq, IrTy::F32) => Instruction::F32Eq,
+        (BinOpKind::NotEq, IrTy::F32) => Instruction::F32Ne,
+
+        (BinOpKind::And, IrTy::I32) => Instruction::I32And,
+        (BinOpKind::Or, IrTy::I32) => Instruction::I32Or,
 
         (op, ty) => unreachable!("bug: sema let `{op}` on {ty:?} thru to codegen")
     }

@@ -20,11 +20,11 @@ pub enum TokenKind {
     #[token("true")] True,
     #[token("false")] False,
 
-    #[regex(r"[0-9]+\.[0-9]+", |lex| lex.slice().parse::<f64>().ok())]
-    Float(f64),
+    #[regex(r"[0-9]+\.[0-9]+", |lex| lex.slice().parse::<f32>().ok())]
+    Float(f32),
 
-    #[regex(r"[0-9]+", |lex| lex.slice().parse::<i64>().ok())]
-    Int(i64),
+    #[regex(r"[0-9]+", |lex| lex.slice().parse::<i32>().ok())]
+    Int(i32),
 
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string())]
     Identifier(String),
