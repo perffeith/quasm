@@ -11,7 +11,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    Compile(BuildArgs),
+    Build(BuildArgs),
     Run(BuildArgs)
 }
 
@@ -23,10 +23,21 @@ struct BuildArgs {
 }
 
 fn write_debug(name: &str, contents: &str) {
-    let result = fs::create_dir_all("build").and_then(|_| fs::write(format!("build/{name}"), contents));
+    let result = fs::create_dir_all("build/debug")
+        .and_then(|_| fs::write(format!("build/debug/{name}"), contents));
     if let Err(e) = result {
-        eprintln!("error writing build/{name}: {e}");
+        eprintln!("error writing build/debug/{name}: {e}");
     }
+}
+
+fn write_wasm(wasm: &[u8]) -> PathBuf {
+    let path = PathBuf::from("build/out.wasm");
+    fs::create_dir_all("build").and_then(|_| fs::write(&path, wasm))
+        .unwrap_or_else(|e| {
+            eprintln!("error writing wasm: {}", e);
+            std::process::exit(1);
+        });
+    path
 }
 
 fn compile(args: &BuildArgs) -> Vec<u8> {
@@ -81,29 +92,17 @@ fn compile(args: &BuildArgs) -> Vec<u8> {
     codegen::emit(ir)
 }
 
-fn write_wasm(wasm: &[u8]) -> PathBuf {
-    let path = PathBuf::from("build/out.wasm");
-    fs::create_dir_all("build").and_then(|_| fs::write(&path, wasm))
-        .unwrap_or_else(|e| {
-            eprintln!("error writing wasm: {}", e);
-            std::process::exit(1);
-        });
-    path
-}
-
 fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Command::Compile(args) => {
+        Command::Build(args) => {
             let wasm = compile(args);
             write_wasm(&wasm);
         },
         Command::Run(args) => {
-            let wasm = compile(args);
-            write_wasm(&wasm);
-
-            todo!("run module in builtin wasm runtime");
+            let _wasm = compile(args);
+            todo!("maybe serve local server and run on the browser???");
         }
     }
 }
