@@ -1,6 +1,7 @@
 use clap::{Args as ClapArgs, Parser as ClapParser, Subcommand};
 use wazi::{lexer, parser, sema, lower, codegen};
 use std::{fs, path::PathBuf};
+use std::process::Command as Process;
 
 #[derive(ClapParser)]
 #[command(name = "wazi")]
@@ -30,6 +31,11 @@ fn write_debug(name: &str, contents: &str) {
     }
 }
 
+const RUNTIME_FILES: &[(&str, &str)] = &[
+    ("main.js", include_str!("../runtime/main.js")),
+    ("index.html", include_str!("../runtime/index.html"))
+];
+
 fn write_wasm(wasm: &[u8]) -> PathBuf {
     let path = PathBuf::from("build/out.wasm");
     fs::create_dir_all("build").and_then(|_| fs::write(&path, wasm))
@@ -38,6 +44,38 @@ fn write_wasm(wasm: &[u8]) -> PathBuf {
             std::process::exit(1);
         });
     path
+}
+
+fn write_runtime() {
+    for (name, contents) in RUNTIME_FILES {
+        let result = fs::create_dir_all("build")
+            .and_then(|_| fs::write(format!("build/{name}"), contents));
+        if let Err(e) = result {
+            eprintln!("error writing build/{name}: {e}");
+            std::process::exit(1);
+        }
+    }
+}
+
+fn serve() {
+    let port = 8080;
+    println!("serving on http://localhost:{port}/");
+
+    let status = Process::new("python")
+        .args(["-m", "http.server", "-d", "build", &port.to_string()])
+        .status()
+        .unwrap_or_else(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                eprintln!("python not found");
+            } else {
+                eprintln!("failed to start server: {e}");
+            }
+            std::process::exit(1);
+        });
+
+    if !status.success() && status.code().is_some() {
+        std::process::exit(status.code().unwrap());
+    }
 }
 
 fn compile(args: &BuildArgs) -> Vec<u8> {
@@ -49,7 +87,7 @@ fn compile(args: &BuildArgs) -> Vec<u8> {
         std::process::exit(1);
     });
 
-    let final_src = prelude + &src;
+    let final_src = prelude + "\n" + &src;
 
     let tokens = match lexer::lex(&final_src) {
         Ok(tokens) => {
@@ -99,10 +137,15 @@ fn main() {
         Command::Build(args) => {
             let wasm = compile(args);
             write_wasm(&wasm);
+            write_runtime();
         },
         Command::Run(args) => {
-            let _wasm = compile(args);
-            todo!("maybe serve local server and run on the browser???");
+            let wasm = compile(args);
+            write_wasm(&wasm);
+            write_runtime();
+            // TODO: for now it uses python to serve html which is not ideal
+            // need to come up with better solution
+            serve();
         }
     }
 }
