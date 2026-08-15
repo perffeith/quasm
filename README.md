@@ -15,3 +15,8 @@ func add(a: Int, b: Int): Int {
 }
 ```
 ## Getting Started
+```
+cargo build
+cargo run -- run examples/simple.wz
+cargo run -- build examples/simple.wz
+```
