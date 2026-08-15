@@ -1,5 +1,5 @@
-extern env/print_i64
+extern env/print_i32
 func print_int(value: Int)
 
-extern env/print_f64
+extern env/print_f32
 func print_float(value: Float)
