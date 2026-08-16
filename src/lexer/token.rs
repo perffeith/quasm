@@ -1,5 +1,27 @@
-use logos::Logos;
+use logos::{Lexer, Logos};
 
+fn str_callback(lex: &mut Lexer<TokenKind>) -> Option<String> {
+    let s = lex.slice();
+    let inner = &s[1..s.len() - 1];
+
+    let mut result = String::with_capacity(inner.len());
+    let mut chars = inner.chars();
+
+    while let Some(c) = chars.next() {
+        if c != '\\' {
+            result.push(c);
+            continue;
+        }
+        match chars.next() {
+            Some('"') => result.push('"'),
+            Some('\\') => result.push('\\'),
+            Some('n') => result.push('\n'),
+            Some('t') => result.push('\t'),
+            _ => return None
+        }
+    }
+    Some(result)
+}
 
 #[derive(Logos, Debug, PartialEq, Clone)]
 #[logos(skip r"[ \t\r\f]+")]
@@ -28,6 +50,9 @@ pub enum TokenKind {
 
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string())]
     Identifier(String),
+
+    #[regex(r#""([^"\\]|\\["\\nt])*""#, str_callback)]
+    StringLit(String),
 
     #[token(".")] Dot,
     #[token("!")] Bang,
