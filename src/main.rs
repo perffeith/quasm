@@ -77,16 +77,14 @@ fn serve() {
     }
 }
 
+const PRELUDE: &str = include_str!("../builtin/prelude.ws");
 fn compile(args: &BuildArgs) -> Vec<u8> {
-    let prelude = fs::read_to_string("builtin/prelude.ws")
-        .expect("failed to read prelude");
-
     let src = fs::read_to_string(&args.file).unwrap_or_else(|e| {
         eprintln!("error reading '{}': {}", args.file.display(), e);
         std::process::exit(1);
     });
 
-    let final_src = prelude + "\n" + &src;
+    let final_src =  format!("{PRELUDE}\n{src}");
 
     let tokens = match lexer::lex(&final_src) {
         Ok(tokens) => {
