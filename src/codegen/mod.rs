@@ -2,6 +2,7 @@ pub mod op;
 
 use std::collections::HashMap;
 use wasm_encoder::{
+    BlockType,
     CodeSection,
     EntityType,
     ExportKind,
@@ -118,13 +119,11 @@ impl Codegen {
         let locals: Vec<ValType> = func.locals.iter().map(|ty| self.val_ty(*ty)).collect();
         let mut func_body = Function::new_with_locals_types(locals);
 
-        for expr in func.body.exprs {
-            self.emit_stmt(&mut func_body, expr);
-        }
+        self.emit_block(&mut func_body, func.body);
 
-        // if func.ret_ty != IrTy::Void {
-        //     func_body.instruction(&Instruction::Unreachable);
-        // }
+        if func.ret_ty != IrTy::Void {
+            func_body.instruction(&Instruction::Unreachable);
+        }
         func_body.instruction(&Instruction::End);
         self.code.function(&func_body);
     }
@@ -134,6 +133,12 @@ impl Codegen {
         self.emit_expr(body, expr);
         if ty != IrTy::Void {
             body.instruction(&Instruction::Drop);
+        }
+    }
+
+    fn emit_block(&mut self, body: &mut Function, block: ir::Block) {
+        for expr in block.exprs {
+            self.emit_stmt(body, expr);
         }
     }
 
@@ -157,6 +162,24 @@ impl Codegen {
                     self.emit_expr(body, *value);
                 }
                 body.instruction(&Instruction::Return);
+            }
+            ir::Expr::Block(block) => {
+                self.emit_block(body, block);
+            }
+            ir::Expr::If(if_stmt) => {
+                self.emit_expr(body, *if_stmt.condition);
+                body.instruction(&Instruction::If(BlockType::Empty));
+                self.emit_block(body, *if_stmt.then_block);
+
+                if let Some(else_block) = if_stmt.else_block {
+                    body.instruction(&Instruction::Else);
+                    match *else_block {
+                        ir::Expr::Block(block) => self.emit_block(body, block), // plain else
+                        expr => self.emit_expr(body, expr)  // elif (nested if)
+                    }
+                }
+
+                body.instruction(&Instruction::End);
             }
             ir::Expr::Call(call) => {
                 for arg in call.args {
