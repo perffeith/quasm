@@ -59,7 +59,6 @@ fn write_runtime() {
 
 fn serve() {
     let port = 8080;
-    println!("serving on http://localhost:{port}/");
 
     let status = Process::new("python")
         .args(["-m", "http.server", "-d", "build", &port.to_string()])
