@@ -132,6 +132,15 @@ fn compile(args: &BuildArgs) -> Vec<u8> {
 fn main() {
     let cli = Cli::parse();
 
+    match fs::remove_dir_all("build") {
+        Ok(()) => {},
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {},
+        Err(e) => {
+            eprintln!("error cleaning build directory: {e}");
+            std::process::exit(1);
+        }
+    }
+
     match &cli.command {
         Command::Build(args) => {
             let wasm = compile(args);
