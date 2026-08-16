@@ -1,10 +1,10 @@
 use clap::{Args as ClapArgs, Parser as ClapParser, Subcommand};
-use wazi::{lexer, parser, sema, lower, codegen};
+use wascript::{lexer, parser, sema, lower, codegen};
 use std::{fs, path::PathBuf};
 use std::process::Command as Process;
 
 #[derive(ClapParser)]
-#[command(name = "wazi")]
+#[command(name = "wascript")]
 struct Cli {
     #[command(subcommand)]
     command: Command
@@ -78,7 +78,7 @@ fn serve() {
 }
 
 fn compile(args: &BuildArgs) -> Vec<u8> {
-    let prelude = fs::read_to_string("builtin/prelude.wz")
+    let prelude = fs::read_to_string("builtin/prelude.ws")
         .expect("failed to read prelude");
 
     let src = fs::read_to_string(&args.file).unwrap_or_else(|e| {

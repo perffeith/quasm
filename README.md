@@ -1,8 +1,7 @@
-# Wazi
+# Wascript
 
-Wazi is a programming language that compile to WebAssembly (WASM). It aims to make writing WASM module simpler and thus provide a simple syntax.
-
-**Wazi is personal "for fun" project** [![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
+Wascript is a programming language that specifically compile to WebAssembly (WASM) for the Web. The aim of this project is to make writing WASM simpler and thus provides a simple syntax.
+[![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
 
 ```
 func main() {
@@ -17,6 +16,6 @@ func add(a: Int, b: Int): Int {
 ## Getting Started
 ```
 cargo build
-cargo run -- run examples/simple.wz
-cargo run -- build examples/simple.wz
+cargo run -q -- run examples/simple.wz
+cargo run -q -- build examples/simple.wz
 ```
