@@ -142,6 +142,9 @@ impl Codegen {
             ir::Expr::ConstInt(value) => {
                 body.instruction(&Instruction::I32Const(value));
             }
+            ir::Expr::ConstBool(value) => {
+                body.instruction(&Instruction::I32Const(value as i32));
+            }
             ir::Expr::LocalGet(get) => {
                 body.instruction(&Instruction::LocalGet(get.id.0));
             }

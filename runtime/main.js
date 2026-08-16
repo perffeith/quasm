@@ -1,6 +1,7 @@
 export const env = {
   print_i32: (val) => console.log(val),
   print_f32: (val) => console.log(val),
+  print_bool: (val) => console.log(val !== 0),
   alert: (val) => alert(val)
 };
 
