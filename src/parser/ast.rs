@@ -137,11 +137,9 @@ pub enum Expr {
     BinaryOp(BinaryOp),
     UnaryOp(UnaryOp),
     Call(Call),
-    // `base.name(args)`. sema decides UFCS call or variant constructor
-    // Never calls a stored field. But if we want to it should be: `(base.name)(args)`
+    // Never calls a stored field closure. But if we want to it should be: `(base.name)(args)`
     DotCall(DotCall),
     Index(Index),
-    // `base.name` sema decides: struct field or variant reference
     DotAccess(DotAccess),
     Closure(Closure)
 }
