@@ -25,6 +25,7 @@ impl Lower {
             Ty::Int => IrTy::I32,
             Ty::Float => IrTy::F32,
             Ty::Bool => IrTy::I32,
+            Ty::String => todo!("string types"),
             Ty::Void => IrTy::Void,
             Ty::Struct(_) => todo!("struct types"),
             Ty::Array(_) => todo!("array types"),
@@ -139,7 +140,8 @@ impl Lower {
             tast::Expr::Literal(lit, _) => match lit {
                 Literal::Int(v) => ir::Expr::ConstInt(*v),
                 Literal::Float(v) => ir::Expr::ConstFloat(*v),
-                Literal::Bool(v) => ir::Expr::ConstBool(*v)
+                Literal::Bool(v) => ir::Expr::ConstBool(*v),
+                Literal::StringLit(_) => todo!("string literals")
             },
             tast::Expr::VarRef(var_ref) => {
                 ir::Expr::LocalGet(ir::LocalGet { id: ir::LocalId(var_ref.id.0), ty: self.lower_ty(&var_ref.ty) })

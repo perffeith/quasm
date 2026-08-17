@@ -194,6 +194,9 @@ impl Parser {
             TokenKind::False => {
                 Ok(self.literal_expr(Literal::Bool(false)))
             }
+            TokenKind::StringLit(lit) => {
+                Ok(self.literal_expr(Literal::StringLit(lit)))
+            }
             TokenKind::LParen => {
                 self.advance();
                 self.skip_newlines();

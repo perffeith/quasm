@@ -287,7 +287,8 @@ impl Sema {
                 let ty = match lit {
                     Literal::Int(_) => Ty::Int,
                     Literal::Float(_) => Ty::Float,
-                    Literal::Bool(_) => Ty::Bool
+                    Literal::Bool(_) => Ty::Bool,
+                    Literal::StringLit(_) => Ty::String
                 };
                 Ok(tast::Expr::Literal(lit, ty))
             }
