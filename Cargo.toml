@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-clap = { version = "4.6.1", features = ["derive"] }
+clap = { version = "4.6.6", features = ["derive"] }
 indexmap = "2.14.0"
 logos = "0.16.1"
-wasm-encoder = "0.251.0"
+wasm-encoder = "0.256.0"
