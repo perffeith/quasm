@@ -11,13 +11,19 @@ pub struct LocalId(pub u32);
 pub struct FuncId(pub u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct StructId(pub u32);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct StructFieldId(pub u32);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TypeId(pub u32);
 
 #[derive(Debug)]
 pub struct Module {
-    pub heap_types: Vec<HeapType>,
     pub imports: Vec<ImportFunc>,
     pub funcs: Vec<Func>,
+    pub structs: Vec<Struct>,
     pub entry: Option<FuncId>
 }
 
@@ -54,6 +60,18 @@ pub struct Func {
 #[derive(Debug)]
 pub struct Param {
     pub id: LocalId,
+    pub ty: IrTy
+}
+
+#[derive(Debug)]
+pub struct Struct {
+    pub id: StructId,
+    pub fields: Vec<StructField>
+}
+
+#[derive(Debug)]
+pub struct StructField {
+    pub id: StructFieldId,
     pub ty: IrTy
 }
 

@@ -37,20 +37,21 @@ impl Lower {
     pub fn lower_module(&mut self, tast: tast::Program) -> ir::Module {
         let mut imports = Vec::new();
         let mut funcs = Vec::new();
+        let mut structs = Vec::new();
 
         for stmt in tast.stmts {
             match stmt {
                 tast::Stmt::ExternFunc(extern_func) => imports.push(self.lower_extern_func_decl(extern_func)),
                 tast::Stmt::Func(func) => funcs.push(self.lower_func_decl(&func)),
-                tast::Stmt::Struct(_) => todo!("implement struct ir"),
+                tast::Stmt::Struct(struc) => structs.push(self.lower_struct_decl(&struc)),
                 _ => unreachable!("bug: sema let non top level stmt thru to lower")
             }
         }
 
         ir::Module {
-            heap_types: vec![],
             imports,
             funcs,
+            structs: vec![],
             entry: tast.entry.map(|id| ir::FuncId(id.0))
         }
     }
@@ -103,6 +104,10 @@ impl Lower {
             ret_ty: self.lower_ty(&func.ret_ty),
             body
         }
+    }
+
+    fn lower_struct_decl(&mut self, struc: &tast::Struct) -> ir::Struct {
+        todo!("lower struct decl")
     }
 
     fn lower_local_decl(&mut self, id: tast::VarId, value_ty: &Ty, value: &tast::Expr) -> ir::Expr {
